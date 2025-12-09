@@ -10,7 +10,9 @@ class TulokUnionpsSpider(CityScrapersSpider):
     name = "tulok_unionps"
     agency = "Union Public Schools Board of Education"
     timezone = "America/Chicago"
-    start_urls = ["https://www.unionps.org/about/board-of-education/agendas-and-minutes"]
+    start_urls = [
+        "https://www.unionps.org/about/board-of-education/agendas-and-minutes"
+    ]  # noqa
 
     meeting_location = {
         "name": "Union Public Schools Administration Building",
@@ -19,7 +21,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
 
     date_re = re.compile(
         r"(January|February|March|April|May|June|July|August|September|October|November|December)"  # noqa
-        r"\s+([0-9lI]{1,2})(?:[,\s]*(\d{4}))?",
+        r"\s+([0-9lI]{1,2})(?:,?\s+)(\d{4})",
         flags=re.IGNORECASE,
     )
 
@@ -65,7 +67,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
             seen_dates.add(start_dt.date())
 
             if entry["anchor"]:
-                links = self._collect_links(entry["anchor"])
+                links = self._collect_links(response, entry["anchor"])
                 title = self._parse_title(entry["anchor"])
             else:
                 links = []
@@ -106,32 +108,29 @@ class TulokUnionpsSpider(CityScrapersSpider):
             return None
 
         month = m.group(1)
-        day_str = m.group(2)
+        day_str = m.group(2).replace("l", "1").replace("I", "1")
+        year = int(m.group(3))
 
-        # Replace common OCR typos: 'l' or 'I' with '1'
-        day_str = day_str.replace("l", "1").replace("I", "1")
-
-        day = int(day_str)
-        year = int(m.group(3)) if m.group(3) else datetime.now().year
-
-        return datetime.strptime(f"{month} {day}, {year}", "%B %d, %Y").replace(
+        return datetime.strptime(
+            f"{month} {int(day_str)}, {year}", "%B %d, %Y"
+        ).replace(  # noqa
             hour=19, minute=0
-        )  # noqa
+        )
 
-    def _collect_links(self, agenda_anchor):
+    def _collect_links(self, response, agenda_anchor):
         links = []
-        href = agenda_anchor.attrib.get("href") or ""
-        if href.startswith("/"):
-            href = f"https://www.unionps.org{href}"
+        # Agenda link (first link)
+        href = response.urljoin(agenda_anchor.attrib.get("href") or "")
         links.append({"href": href, "title": "Agenda"})
 
+        # Minutes and Board Reports, if any
         for link in agenda_anchor.xpath("following-sibling::a"):
             text = (link.xpath("string()").get() or "").strip()
-            href = link.attrib.get("href") or ""
+
             if self.date_re.search(text):
                 break
-            if href.startswith("/"):
-                href = f"https://www.unionps.org{href}"
+
+            href = response.urljoin(link.attrib.get("href") or "")
             lt = text.lower()
             if "minutes" in lt:
                 links.append({"href": href, "title": "Minutes"})

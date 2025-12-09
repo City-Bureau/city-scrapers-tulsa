@@ -6,9 +6,7 @@ from city_scrapers_core.constants import BOARD
 from city_scrapers_core.utils import file_response
 from freezegun import freeze_time
 
-from city_scrapers.spiders.tulok_unionps import (
-    TulokUnionpsSpider,
-)
+from city_scrapers.spiders.tulok_unionps import TulokUnionpsSpider
 
 # Load local HTML file for testing
 test_response = file_response(
