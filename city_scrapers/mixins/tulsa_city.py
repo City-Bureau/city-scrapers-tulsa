@@ -163,7 +163,9 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
                 source=f"{self.base_url}/government/meeting-agendas/",
             )
 
-            meeting["status"] = self._get_status(meeting, text=item.get("Meeting_Type", ""))
+            meeting["status"] = self._get_status(
+                meeting, text=item.get("Meeting_Type", "")
+            )
             meeting["id"] = self._get_id(meeting)
 
             return meeting
@@ -205,17 +207,13 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
             if time_str and time_str.strip():
                 try:
                     time_obj = datetime.strptime(time_str.strip(), "%I:%M%p")
-                    return date_obj.replace(
-                        hour=time_obj.hour,
-                        minute=time_obj.minute
-                    )
+                    return date_obj.replace(hour=time_obj.hour, minute=time_obj.minute)
                 except ValueError:
                     # Try alternate format with space: "H:MM AM/PM"
                     try:
                         time_obj = datetime.strptime(time_str.strip(), "%I:%M %p")
                         return date_obj.replace(
-                            hour=time_obj.hour,
-                            minute=time_obj.minute
+                            hour=time_obj.hour, minute=time_obj.minute
                         )
                     except ValueError:
                         pass
@@ -270,13 +268,15 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
 
         agenda_id = item.get("Agenda_ID")
         if agenda_id:
-            links.append({
-                "href": (
-                    f"{self.base_url}/apps/COTDisplayDocument/"
-                    f"?DocumentType=Agenda&DocumentIdentifiers={agenda_id}"
-                ),
-                "title": "Agenda",
-            })
+            links.append(
+                {
+                    "href": (
+                        f"{self.base_url}/apps/COTDisplayDocument/"
+                        f"?DocumentType=Agenda&DocumentIdentifiers={agenda_id}"
+                    ),
+                    "title": "Agenda",
+                }
+            )
 
         return links
 
