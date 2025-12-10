@@ -12,7 +12,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
     timezone = "America/Chicago"
     start_urls = [
         "https://www.unionps.org/about/board-of-education/agendas-and-minutes"
-    ]  # noqa
+    ]
 
     meeting_location = {
         "name": "Union Public Schools Administration Building",
@@ -31,7 +31,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
         time_notes_list = response.css("#fsEl_23341 p::text").getall()
         time_notes = " ".join(
             t.strip().replace("\xa0", " ") for t in time_notes_list if t.strip()
-        )  # noqa
+        )
         if not time_notes:
             time_notes = "Regular meetings typically begin at 7:00 PM"
 
@@ -94,8 +94,8 @@ class TulokUnionpsSpider(CityScrapersSpider):
         """Determine if the meeting is Regular or Special."""
         search_texts = [
             (anchor.attrib.get("data-file-name") or "").lower(),
-            (anchor.xpath("string()").get("") or "").lower(),
-            (anchor.xpath("following-sibling::text()[1]").get("") or "").lower(),
+            (anchor.xpath("string()").get() or "").lower(),
+            (anchor.xpath("following-sibling::text()[1]").get() or "").lower(),
         ]
         if any("special" in text for text in search_texts):
             return "Board of Education Special Meeting"
@@ -113,9 +113,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
 
         return datetime.strptime(
             f"{month} {int(day_str)}, {year}", "%B %d, %Y"
-        ).replace(  # noqa
-            hour=19, minute=0
-        )
+        ).replace(hour=19, minute=0)
 
     def _collect_links(self, response, agenda_anchor):
         links = []

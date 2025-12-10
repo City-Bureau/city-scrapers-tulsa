@@ -24,15 +24,27 @@ parsed_items = [item for item in spider.parse(test_response)]
 freezer.stop()
 
 
-def test_titles():
-    # Check first few titles
-    assert parsed_items[0]["title"] in [
+def test_first_item_properties():
+    item = parsed_items[0]
+    assert item["title"] == "Board of Education Meeting"
+    assert item["start"] == datetime(2025, 1, 21, 19, 0)
+    assert item["status"] == "passed"
+    assert item["location"] == spider.meeting_location
+    # Links
+    assert len(item["links"]) == 3
+    assert item["links"][0]["title"] == "Agenda"
+    href = item["links"][0]["href"]
+    assert href.startswith("https://www.unionps.org/fs/resource-manager/view/")
+
+
+def test_title_values():
+    allowed_titles = {
         "Board of Education Meeting",
         "Board of Education Special Meeting",
-    ]
-    # All items have a title
+    }
+
     for item in parsed_items:
-        assert item["title"]
+        assert item["title"] in allowed_titles
 
 
 def test_description():
