@@ -10,15 +10,18 @@ class TulokBoccSpider(CityScrapersSpider):
     name = "tulok_bocc"
     agency = "Tulsa Board of County Commissioners"
     timezone = "America/Chicago"
+    api_base_url = "https://tulsacook.api.civicclerk.com"
+    category_filter = "categoryId+in+(26,40)"
 
     def start_requests(self):
-        today = date.today().isoformat()
-        year_start = f"{date.today().year}-01-01"
+        today = date.today()
+        today_str = today.isoformat()
+        year_start = f"{today.year}-01-01"
         urls = [
             # past events from year start up to today
-            f"https://tulsacook.api.civicclerk.com/v1/Events?$filter=startDateTime+ge+{year_start}+and+startDateTime+lt+{today}+and+categoryId+in+(26,40)&$orderby=startDateTime+desc,+eventName+desc",  # noqa
+            f"{self.api_base_url}/v1/Events?$filter=startDateTime+ge+{year_start}+and+startDateTime+lt+{today_str}+and+{self.category_filter}&$orderby=startDateTime+desc,+eventName+desc",  # noqa
             # upcoming events (today and future)
-            f"https://tulsacook.api.civicclerk.com/v1/Events?$filter=categoryId+in+(26,40)+and+startDateTime+ge+{today}&$orderby=startDateTime+asc,+eventName+asc",  # noqa
+            f"{self.api_base_url}/v1/Events?$filter={self.category_filter}+and+startDateTime+ge+{today_str}&$orderby=startDateTime+asc,+eventName+asc",  # noqa
         ]
         for url in urls:
             yield scrapy.Request(url, callback=self.parse)
@@ -125,7 +128,7 @@ class TulokBoccSpider(CityScrapersSpider):
             links.append(
                 {
                     "title": f.get("name") or f.get("type") or "Document",
-                    "href": f"https://tulsacook.api.civicclerk.com/{f['url']}",
+                    "href": f"{self.api_base_url}/{f['url']}",
                 }
             )
         return links
