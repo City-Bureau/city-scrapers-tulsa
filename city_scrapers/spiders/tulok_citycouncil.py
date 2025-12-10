@@ -30,25 +30,48 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
         """
         Parse the main Granicus page and extract City Council meetings.
 
-        We target the CollapsiblePanel with ID "CollapsiblePanel20251" which contains
-        the *City Council section.
+        We target CollapsiblePanels for *City Council sections across multiple years.
+        Panel IDs follow the pattern: CollapsiblePanel2024X, CollapsiblePanel2023X, etc.
+        where X is a digit (varies by year).
         """
-        # Find the City Council collapsible panel
-        city_council_panel = response.css("div#CollapsiblePanel20251")
+        # Define panel IDs for each year (2016-2025)
+        # The panel ID pattern includes the year and a digit suffix
+        year_panel_ids = {
+            2025: "CollapsiblePanel20251",
+            2024: "CollapsiblePanel20241",
+            2023: "CollapsiblePanel20231",
+            2022: "CollapsiblePanel20221",
+            2021: "CollapsiblePanel20211",
+            2020: "CollapsiblePanel20201",
+            2019: "CollapsiblePanel20191",
+            2018: "CollapsiblePanel20181",
+            2017: "CollapsiblePanel20171",
+            2016: "CollapsiblePanel20161",
+        }
 
-        if not city_council_panel:
-            self.logger.warning("Could not find City Council panel on page")
-            return
+        total_meetings = 0
 
-        # Extract all meeting rows from the table
-        meeting_rows = city_council_panel.css("table.listingTable tbody tr.listingRow")
+        # Iterate through each year's panel
+        for year, panel_id in year_panel_ids.items():
+            city_council_panel = response.css(f"div#{panel_id}")
 
-        self.logger.info(f"Found {len(meeting_rows)} City Council meetings")
+            if not city_council_panel:
+                self.logger.info(f"Could not find City Council panel for {year} (ID: {panel_id})")
+                continue
 
-        for row in meeting_rows:
-            meeting = self._parse_meeting_row(row, response.url)
-            if meeting:
-                yield meeting
+            # Extract all meeting rows from the table
+            meeting_rows = city_council_panel.css("table.listingTable tbody tr.listingRow")
+
+            if meeting_rows:
+                self.logger.info(f"Found {len(meeting_rows)} City Council meetings for {year}")
+                total_meetings += len(meeting_rows)
+
+                for row in meeting_rows:
+                    meeting = self._parse_meeting_row(row, response.url)
+                    if meeting:
+                        yield meeting
+
+        self.logger.info(f"Total City Council meetings found: {total_meetings}")
 
     def _parse_meeting_row(self, row, source_url):
         """

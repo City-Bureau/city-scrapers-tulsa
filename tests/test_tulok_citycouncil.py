@@ -26,8 +26,9 @@ freezer.stop()
 
 def test_meeting_count():
     """Test that the correct number of meetings are parsed."""
-    # This will depend on the test HTML file - adjust as needed
-    assert len(parsed_items) > 0
+    # Test HTML contains 13 meetings across all years (2016-2025):
+    # 2025: 2, 2024: 1, 2023: 1, 2022: 1, 2021: 1, 2020: 1, 2019: 1, 2018: 1, 2017: 2, 2016: 2
+    assert len(parsed_items) == 13
 
 
 def test_title():
