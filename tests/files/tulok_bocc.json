@@ -1,0 +1,66 @@
+{
+  "value": [
+    {
+      "id": 12345,
+      "eventName": "Board of County Commissioners Regular Meeting",
+      "agendaName": "BOCC Agenda",
+      "eventDescription": "Regular weekly meeting of the Board of County Commissioners",
+      "startDateTime": "2025-12-09T09:00:00Z",
+      "endDateTime": "2025-12-09T11:00:00Z",
+      "categoryId": 26,
+      "eventLocation": {
+        "address1": "500 S Denver Ave",
+        "address2": "Room 100",
+        "city": "Tulsa",
+        "state": "OK",
+        "zipCode": "74103"
+      },
+      "publishedFiles": [
+        {
+          "name": "Agenda",
+          "type": "Agenda",
+          "url": "v1/Documents/12345/Agenda.pdf"
+        },
+        {
+          "name": "Minutes",
+          "type": "Minutes",
+          "url": "v1/Documents/12345/Minutes.pdf"
+        }
+      ]
+    },
+    {
+      "id": 12346,
+      "eventName": "Board of County Commissioners Special Meeting",
+      "agendaName": null,
+      "eventDescription": "",
+      "startDateTime": "2025-12-16T14:00:00Z",
+      "endDateTime": null,
+      "categoryId": 40,
+      "eventLocation": {
+        "address1": "500 S Denver Ave",
+        "address2": "",
+        "city": "Tulsa",
+        "state": "OK",
+        "zipCode": "74103"
+      },
+      "publishedFiles": []
+    },
+    {
+      "id": 12347,
+      "eventName": null,
+      "agendaName": "Budget Workshop",
+      "eventDescription": "Annual budget review",
+      "startDateTime": "2025-11-25T10:30:00Z",
+      "endDateTime": "2025-11-25T12:00:00Z",
+      "categoryId": 26,
+      "eventLocation": {},
+      "publishedFiles": [
+        {
+          "name": null,
+          "type": "Document",
+          "url": "v1/Documents/12347/Budget.pdf"
+        }
+      ]
+    }
+  ]
+}
