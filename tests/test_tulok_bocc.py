@@ -13,7 +13,17 @@ test_response = file_response(
     join(dirname(__file__), "files", "tulok_bocc.json"),
     url="https://tulsacook.api.civicclerk.com/v1/Events?$filter=categoryId+in+(26,40)",
 )
+
+# Load HTML file for testing info page parsing
+info_page_response = file_response(
+    join(dirname(__file__), "files", "tulok_bocc.html"),
+    url="https://www2.tulsacounty.org/Legacy/agendasdetail_civic.aspx?entity=BOCC",
+)
+
 spider = TulokBoccSpider()
+
+# Parse the info page first to extract time notes
+list(spider.parse_info_page(info_page_response))
 
 # Freeze time for consistent test results
 freezer = freeze_time("2025-12-02")
@@ -40,7 +50,7 @@ def test_first_item_properties():
     assert item["links"][0]["href"].startswith("https://tulsacook.portal.civicclerk.com/")
 
 
-def test_title():
+def test_title_values():
     for item in parsed_items:
         assert item["title"] in [
             "Board of County Commissioners Regular Meeting",
@@ -66,7 +76,17 @@ def test_end():
 
 def test_time_notes():
     for item in parsed_items:
-        assert isinstance(item["time_notes"], str)
+        assert "BOCC meets every Monday" in item["time_notes"]
+        assert "9:30 a.m." in item["time_notes"]
+
+
+def test_parse_info_page():
+    """Test that time notes are correctly extracted from the info page HTML."""
+    test_spider = TulokBoccSpider()
+    list(test_spider.parse_info_page(info_page_response))
+    assert "BOCC meets every Monday" in test_spider.time_notes
+    assert "9:30 a.m." in test_spider.time_notes
+    assert "Tuesday at 8:30 a.m." in test_spider.time_notes
 
 
 def test_id_and_status():
@@ -92,6 +112,7 @@ def test_links():
         for link in item["links"]:
             assert "href" in link and "title" in link
             assert link["href"].startswith("https://tulsacook.portal.civicclerk.com/")
+            assert link["title"] in ["Agenda", "Agenda Packet", "Minutes", "Other", "Document"]
 
 
 def test_classification():
