@@ -71,7 +71,7 @@ def test_status():
 def test_location():
     assert parsed_items[0]["location"] == {
         "name": "3rd Floor North Presentation Room, City Hall at One Technology Center",
-        "address": "175 E 2nd St, Suite 865, Tulsa, OK 74103",
+        "address": "175 E 2nd St, Tulsa, OK 74103",
     }
 
 

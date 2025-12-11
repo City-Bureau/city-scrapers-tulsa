@@ -109,8 +109,9 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
                 else:
                     meetings.append(meeting_data)
             return meetings
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.error(f"Failed to filter meetings data: {e}")
+            return []
 
     def _parse_meeting(self, item):
         title = self._parse_title(item)
@@ -200,10 +201,9 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
         # Check for cancellation indicators
         if any(word in text_lower for word in ["cancel", "reschedule", "postpone"]):
             return CANCELLED
-        elif "special" or "regular" in text_lower:
+        elif "special" in text_lower or "regular" in text_lower:
             if item.get("start") < datetime.now():
                 return PASSED
-            else:
-                return TENTATIVE
+            return TENTATIVE
 
         return super()._get_status(item)
