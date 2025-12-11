@@ -56,15 +56,15 @@ class TulokBoccSpider(CityScrapersSpider):
         for raw_event in events:
             meeting = Meeting(
                 title=self._parse_title(raw_event),
-                description=self._parse_description(raw_event),
-                classification=self._parse_classification(raw_event),
+                description=raw_event.get("eventDescription") or "",
+                classification=BOARD,
                 start=self._parse_start(raw_event),
                 end=self._parse_end(raw_event),
-                all_day=self._parse_all_day(raw_event),
-                time_notes=self._parse_time_notes(raw_event),
+                all_day=False,
+                time_notes=self.time_notes,
                 location=self._parse_location(raw_event),
                 links=self._parse_links(raw_event),
-                source=self._parse_source(response),
+                source=response.url,
             )
 
             meeting["status"] = self._get_status(meeting)
@@ -85,14 +85,6 @@ class TulokBoccSpider(CityScrapersSpider):
             or "Board of County Commissioners"
         )
 
-    def _parse_description(self, raw_event):
-        """Parse or generate meeting description."""
-        return raw_event.get("eventDescription") or ""
-
-    def _parse_classification(self, raw_event):
-        """Parse or generate classification from allowed options."""
-        return BOARD
-
     def _parse_start(self, raw_event):
         """Parse start datetime as a naive datetime object."""
         start_str = raw_event.get("startDateTime")
@@ -103,19 +95,11 @@ class TulokBoccSpider(CityScrapersSpider):
         end_str = raw_event.get("endDateTime")
         return self._parse_dt(end_str)
 
-    def _parse_time_notes(self, raw_event):
-        """Parse any additional notes on the timing of the meeting"""
-        return self.time_notes
-
-    def _parse_all_day(self, raw_event):
-        """Parse or generate all-day status. Defaults to False."""
-        return False
-
     def _parse_location(self, raw_event):
         """Parse or generate location."""
         event_location = raw_event.get("eventLocation") or {}
 
-        location_name = "Board of County Commissioners"
+        location_name = "Tulsa County Headquarters Building"
         address_parts = [
             event_location.get("address1") or "",
             event_location.get("address2") or "",
@@ -151,10 +135,6 @@ class TulokBoccSpider(CityScrapersSpider):
                 }
             )
         return links
-
-    def _parse_source(self, response):
-        """Parse or generate source."""
-        return response.url
 
     def _parse_dt(self, dt_str):
         """Parse an ISO datetime string into a naive datetime object."""
