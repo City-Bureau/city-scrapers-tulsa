@@ -130,7 +130,7 @@ class TulokBoccSpider(CityScrapersSpider):
                 continue
             links.append(
                 {
-                    "title": f.get("name") or f.get("type") or "Document",
+                    "title": f.get("type") or "Document",
                     "href": f"{self.portal_base_url}/event/{event_id}/files/agenda/{file_id}",
                 }
             )
