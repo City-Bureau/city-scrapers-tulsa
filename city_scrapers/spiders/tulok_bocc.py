@@ -12,9 +12,25 @@ class TulokBoccSpider(CityScrapersSpider):
     timezone = "America/Chicago"
     api_base_url = "https://tulsacook.api.civicclerk.com"
     portal_base_url = "https://tulsacook.portal.civicclerk.com"
+    info_page_url = "https://www2.tulsacounty.org/Legacy/agendasdetail_civic.aspx?entity=BOCC%20-%20Board%20of%20County%20Commissioners"  # noqa
     category_filter = "categoryId+in+(26,40)"
+    time_notes = ""
 
     def start_requests(self):
+        # First fetch the info page using css selectorsto get time notes
+        yield scrapy.Request(self.info_page_url, callback=self.parse_info_page)
+
+    def parse_info_page(self, response):
+        table = response.css("#ctl00_ContentPlaceHolder1_DisplayTable")
+        if table:
+            paragraphs = table.css("p::text").getall()
+            for p in paragraphs:
+                if "BOCC meets" in p or "Monday" in p:
+                    # Clean up whitespace and normalize
+                    self.time_notes = " ".join(p.split())
+                    break
+
+        # Then fetch the events from the API
         today = date.today()
         today_str = today.isoformat()
         year_start = f"{today.year}-01-01"
@@ -89,7 +105,7 @@ class TulokBoccSpider(CityScrapersSpider):
 
     def _parse_time_notes(self, raw_event):
         """Parse any additional notes on the timing of the meeting"""
-        return ""
+        return self.time_notes
 
     def _parse_all_day(self, raw_event):
         """Parse or generate all-day status. Defaults to False."""
