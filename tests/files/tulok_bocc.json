@@ -17,14 +17,14 @@
       },
       "publishedFiles": [
         {
+          "fileId": 100,
           "name": "Agenda",
-          "type": "Agenda",
-          "url": "v1/Documents/12345/Agenda.pdf"
+          "type": "Agenda"
         },
         {
+          "fileId": 101,
           "name": "Minutes",
-          "type": "Minutes",
-          "url": "v1/Documents/12345/Minutes.pdf"
+          "type": "Minutes"
         }
       ]
     },
@@ -56,9 +56,9 @@
       "eventLocation": {},
       "publishedFiles": [
         {
+          "fileId": 200,
           "name": null,
-          "type": "Document",
-          "url": "v1/Documents/12347/Budget.pdf"
+          "type": "Document"
         }
       ]
     }

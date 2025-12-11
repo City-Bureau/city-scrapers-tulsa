@@ -37,7 +37,7 @@ def test_first_item_properties():
     # Links
     assert len(item["links"]) == 2
     assert item["links"][0]["title"] == "Agenda"
-    assert item["links"][0]["href"].startswith("https://tulsacook.api.civicclerk.com/")
+    assert item["links"][0]["href"].startswith("https://tulsacook.portal.civicclerk.com/")
 
 
 def test_title():
@@ -91,7 +91,7 @@ def test_links():
         assert isinstance(item["links"], list)
         for link in item["links"]:
             assert "href" in link and "title" in link
-            assert link["href"].startswith("https://tulsacook.api.civicclerk.com/")
+            assert link["href"].startswith("https://tulsacook.portal.civicclerk.com/")
 
 
 def test_classification():

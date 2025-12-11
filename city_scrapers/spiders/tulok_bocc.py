@@ -11,6 +11,7 @@ class TulokBoccSpider(CityScrapersSpider):
     agency = "Tulsa Board of County Commissioners"
     timezone = "America/Chicago"
     api_base_url = "https://tulsacook.api.civicclerk.com"
+    portal_base_url = "https://tulsacook.portal.civicclerk.com"
     category_filter = "categoryId+in+(26,40)"
 
     def start_requests(self):
@@ -121,14 +122,16 @@ class TulokBoccSpider(CityScrapersSpider):
 
     def _parse_links(self, raw_event):
         """Parse or generate links."""
+        event_id = raw_event.get("id")
         links = []
         for f in raw_event.get("publishedFiles", []):
-            if not f.get("url"):
+            file_id = f.get("fileId")
+            if not file_id or not event_id:
                 continue
             links.append(
                 {
                     "title": f.get("name") or f.get("type") or "Document",
-                    "href": f"{self.api_base_url}/{f['url']}",
+                    "href": f"{self.portal_base_url}/event/{event_id}/files/agenda/{file_id}",
                 }
             )
         return links
