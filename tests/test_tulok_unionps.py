@@ -19,7 +19,18 @@ spider = TulokUnionpsSpider()
 freezer = freeze_time("2025-11-25")
 freezer.start()
 
-parsed_items = [item for item in spider.parse(test_response)]
+parsed_items = []
+# Run spider.parse() → yields only a Request
+for req in spider.parse(test_response):
+    board_page = file_response(
+        join(dirname(__file__), "files", "tulok_unionps_board.html"),
+        url="https://www.unionps.org/about/board-of-education",
+    )
+    # Attach main_page to meta
+    board_page.meta["main_page"] = test_response
+    # Call parse_board_page manually to extract meetings
+    parsed_items.extend(spider.parse_board_page(board_page))
+
 
 freezer.stop()
 
@@ -30,8 +41,12 @@ def test_first_item_properties():
     assert item["start"] == datetime(2025, 1, 21, 19, 0)
     assert item["status"] == "passed"
     assert item["location"] == spider.meeting_location
+
+    assert isinstance(item["description"], str)
+    assert item["description"] != ""
+
     # Links
-    assert len(item["links"]) == 3
+    assert len(item["links"]) == 4
     assert item["links"][0]["title"] == "Agenda"
     href = item["links"][0]["href"]
     assert href.startswith("https://www.unionps.org/fs/resource-manager/view/")
@@ -49,7 +64,7 @@ def test_title_values():
 
 def test_description():
     for item in parsed_items:
-        assert item["description"] == ""
+        assert isinstance(item["description"], str)
 
 
 def test_start():
@@ -96,7 +111,7 @@ def test_links():
         for link in item["links"]:
             assert "href" in link and "title" in link
             assert link["href"]
-            assert link["title"] in ["Agenda", "Minutes", "Board Report"]
+            assert link["title"] in ["Agenda", "Minutes", "Board Report", "Video"]
 
 
 def test_classification():

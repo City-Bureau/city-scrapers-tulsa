@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 
+import scrapy
 from city_scrapers_core.constants import BOARD
 from city_scrapers_core.items import Meeting
 from city_scrapers_core.spiders import CityScrapersSpider
@@ -26,9 +27,27 @@ class TulokUnionpsSpider(CityScrapersSpider):
     )
 
     def parse(self, response):
-        """Parse past and upcoming meetings in a single loop."""
-        # Time notes
-        time_notes_list = response.css("#fsEl_23341 p::text").getall()
+        """Save main page and fetch description from board page."""
+        yield response.follow(
+            "https://www.unionps.org/about/board-of-education",
+            callback=self.parse_board_page,
+            meta={"main_page": response},
+        )
+
+    def parse_board_page(self, response):
+        """Extract description and YouTube link, then parse meetings."""
+        main_page = response.meta["main_page"]
+
+        # Extract description
+        p_html = response.css("#fsEl_21196 p").get()
+        desc = p_html.split("<br")[0]
+        desc = scrapy.Selector(text=desc).xpath("string()").get().strip()
+
+        # Extract YouTube playlist link
+        youtube_playlist = response.css(".fsElementHeaderContent a::attr(href)").get()
+
+        # Get time notes from main page
+        time_notes_list = main_page.css("#fsEl_23341 p::text").getall()
         time_notes = " ".join(
             t.strip().replace("\xa0", " ") for t in time_notes_list if t.strip()
         )
@@ -36,12 +55,10 @@ class TulokUnionpsSpider(CityScrapersSpider):
             time_notes = "Regular meetings typically begin at 7:00 PM"
 
         seen_dates = set()
-
-        # --- Combined sources: past panels + upcoming section ---
         sources = []
 
         # Past meetings with links
-        panels = response.css("#fsEl_23352 section.fsPanel")
+        panels = main_page.css("#fsEl_23352 section.fsPanel")
         for panel in panels:
             for link in panel.css("a"):
                 text = (link.xpath("string()").get() or "").strip()
@@ -51,7 +68,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
                 sources.append({"text": text, "anchor": link})
 
         # Upcoming meetings without links
-        upcoming_section = response.css("section#fsEl_23350")
+        upcoming_section = main_page.css("section#fsEl_23350")
         for col in upcoming_section.css("div.fsStyleColumn"):
             for text in col.xpath(".//p/text()").getall():
                 for date_str in text.split("\n"):
@@ -59,7 +76,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
                     if date_str:
                         sources.append({"text": date_str, "anchor": None})
 
-        # --- Process all sources ---
+        # Process all sources
         for entry in sources:
             start_dt = self._parse_start_from_text(entry["text"])
             if not start_dt or start_dt.date() in seen_dates:
@@ -67,15 +84,19 @@ class TulokUnionpsSpider(CityScrapersSpider):
             seen_dates.add(start_dt.date())
 
             if entry["anchor"]:
-                links = self._collect_links(response, entry["anchor"])
+                links = self._collect_links(main_page, entry["anchor"])
                 title = self._parse_title(entry["anchor"])
             else:
                 links = []
                 title = "Board of Education Meeting"
 
+            # Add YouTube playlist link to all meetings
+            if youtube_playlist:
+                links.append({"href": youtube_playlist, "title": "Video"})
+
             meeting = Meeting(
                 title=title,
-                description="",
+                description=desc,
                 classification=BOARD,
                 start=start_dt,
                 end=None,
@@ -83,7 +104,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
                 time_notes=time_notes,
                 location=self.meeting_location,
                 links=links,
-                source=response.url,
+                source=main_page.url,
             )
             meeting["status"] = self._get_status(meeting)
             meeting["id"] = self._get_id(meeting)
