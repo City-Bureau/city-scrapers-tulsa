@@ -47,7 +47,10 @@ def test_first_item_properties():
     # Links
     assert len(item["links"]) == 3
     assert item["links"][0]["title"] == "Agenda"
-    assert item["links"][0]["href"] == "https://tulsacook.portal.civicclerk.com/event/2182/files/agenda/9404"
+    assert (
+        item["links"][0]["href"]
+        == "https://tulsacook.portal.civicclerk.com/event/2182/files/agenda/9404"
+    )  # noqa
 
 
 def test_title_values():
@@ -111,7 +114,13 @@ def test_links():
         for link in item["links"]:
             assert "href" in link and "title" in link
             assert link["href"].startswith("https://tulsacook.portal.civicclerk.com/")
-            assert link["title"] in ["Agenda", "Agenda Packet", "Minutes", "Other", "Document"]
+            assert link["title"] in [
+                "Agenda",
+                "Agenda Packet",
+                "Minutes",
+                "Other",
+                "Document",
+            ]  # noqa
     # Future meeting (3rd item) has no published files
     assert parsed_items[2]["links"] == []
 

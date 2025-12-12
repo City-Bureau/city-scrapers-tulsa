@@ -17,7 +17,7 @@ class TulokBoccSpider(CityScrapersSpider):
     time_notes = ""
 
     def start_requests(self):
-        # First fetch the info page using css selectorsto get time notes
+        # First fetch the info page using CSS selectors to get time notes
         yield scrapy.Request(self.info_page_url, callback=self.parse_info_page)
 
     def parse_info_page(self, response):
@@ -131,7 +131,7 @@ class TulokBoccSpider(CityScrapersSpider):
             links.append(
                 {
                     "title": f.get("type") or "Document",
-                    "href": f"{self.portal_base_url}/event/{event_id}/files/agenda/{file_id}",
+                    "href": f"{self.portal_base_url}/event/{event_id}/files/agenda/{file_id}",  # noqa
                 }
             )
         return links
