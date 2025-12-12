@@ -67,19 +67,24 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
                 total_meetings += len(meeting_rows)
 
                 for row in meeting_rows:
-                    meeting = self._parse_meeting_row(row, response.url)
+                    meeting = self._parse_meeting_row(row, response)
                     if meeting:
                         yield meeting
 
         self.logger.info(f"Total City Council meetings found: {total_meetings}")
 
-    def _parse_meeting_row(self, row, source_url):
+        # Parse upcoming events section
+        upcoming_meetings = self._parse_upcoming_events(response)
+        for meeting in upcoming_meetings:
+            yield meeting
+
+    def _parse_meeting_row(self, row, response):
         """
         Parse a single meeting row from the table.
 
         Args:
             row: Scrapy selector for a table row
-            source_url: URL of the source page
+            response: Scrapy response object
 
         Returns:
             Meeting item or None
@@ -93,8 +98,7 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
                 title = "City Council Meeting"
 
             # Extract date and time
-            date_text = row.css('td.listItem[headers*="Date"]::text').getall()
-            date_text = " ".join([t.strip() for t in date_text if t.strip()])
+            date_text = row.css('td.listItem[headers*="Date"]').xpath("normalize-space()").get()
 
             start = self._parse_datetime(date_text)
             if not start:
@@ -102,7 +106,7 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
                 return None
 
             # Extract links (Agenda and Video)
-            links = self._parse_links(row)
+            links = self._parse_links(row, response)
 
             # Build meeting item
             meeting = Meeting(
@@ -118,7 +122,7 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
                     "address": "175 E 2nd St, Tulsa, OK 74103",
                 },
                 links=links,
-                source=source_url,
+                source=response.url,
             )
 
             meeting["status"] = self._get_status(meeting)
@@ -148,10 +152,6 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             return None
 
         try:
-            # Clean up the text - remove non-breaking spaces and extra whitespace
-            date_text = re.sub(r"\s+", " ", date_text)
-            date_text = date_text.replace("\xa0", " ")
-
             # Parse format: "Month Day, Year - HH:MM AM/PM"
             # Example: "November 19, 2025 - 5:00 PM"
             match = re.search(
@@ -176,12 +176,13 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             self.logger.error(f"Error parsing datetime '{date_text}': {e}")
             return None
 
-    def _parse_links(self, row):
+    def _parse_links(self, row, response):
         """
         Extract agenda and video links from the meeting row.
 
         Args:
             row: Scrapy selector for a table row
+            response: Scrapy response object for URL joining
 
         Returns:
             List of link dictionaries
@@ -191,10 +192,7 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
         # Extract Agenda link
         agenda_link = row.css('td.listItem a[href*="AgendaViewer"]::attr(href)').get()
         if agenda_link:
-            # Ensure the link has the protocol
-            if agenda_link.startswith("//"):
-                agenda_link = "https:" + agenda_link
-            links.append({"href": agenda_link, "title": "Agenda"})
+            links.append({"href": response.urljoin(agenda_link), "title": "Agenda"})
 
         # Extract Video link from onclick attribute
         video_onclick = row.css(
@@ -205,8 +203,158 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             match = re.search(r"window\.open\('([^']+)'", video_onclick)
             if match:
                 video_link = match.group(1)
-                if video_link.startswith("//"):
-                    video_link = "https:" + video_link
-                links.append({"href": video_link, "title": "Video"})
+                links.append({"href": response.urljoin(video_link), "title": "Video"})
+
+        return links
+
+    def _parse_upcoming_events(self, response):
+        """
+        Parse upcoming events section and filter for Council meetings.
+
+        Args:
+            response: Scrapy response object
+
+        Returns:
+            List of Meeting items
+        """
+        meetings = []
+
+        # Find the upcoming events table (summary attribute identifies it)
+        upcoming_table = response.css('table.listingTable[summary*="Upcoming"]')
+
+        if not upcoming_table:
+            self.logger.info("Could not find upcoming events table")
+            return meetings
+
+        # Extract all meeting rows from the upcoming events table
+        meeting_rows = upcoming_table.css("tbody tr.listingRow")
+
+        council_count = 0
+        for row in meeting_rows:
+            # Extract meeting title to filter for Council meetings
+            title = row.css('td.listItem[headers="Name"]::text').get()
+            if title:
+                title = title.strip()
+                # Only process City Council meetings (not committee meetings)
+                # Pattern: Must contain "Regular", "Special", or "Emergency"
+                # AND must NOT contain "Committee"
+                if re.search(r'\b(Regular|Special|Emergency)\b', title, re.IGNORECASE) and \
+                   "Committee" not in title:
+                    meeting = self._parse_upcoming_event_row(row, response)
+                    if meeting:
+                        meetings.append(meeting)
+                        council_count += 1
+
+        self.logger.info(f"Found {council_count} upcoming Council meetings")
+        return meetings
+
+    def _parse_upcoming_event_row(self, row, response):
+        """
+        Parse a single upcoming event row from the table.
+
+        Args:
+            row: Scrapy selector for a table row
+            response: Scrapy response object
+
+        Returns:
+            Meeting item or None
+        """
+        try:
+            # Extract meeting title
+            title = row.css('td.listItem[headers="Name"]::text').get()
+            if title:
+                title = title.strip()
+            else:
+                title = "City Council Meeting"
+
+            # Extract date and time from the Date column
+            # This can contain either plain text date or "In Progress" with embedded link
+            date_cell = row.css('td.listItem[headers="Date"]')
+
+            # Get normalized text (automatically handles whitespace)
+            date_text = date_cell.xpath("normalize-space()").get()
+
+            # Skip "In Progress" text for date parsing
+            if date_text:
+                date_text = date_text.replace("In Progress", "").strip()
+
+            # If no date found, check if this is an "In Progress" meeting
+            # For "In Progress" meetings, we'll skip them as they don't have a future date
+            if not date_text:
+                # Check if the date cell contains "In Progress" link
+                in_progress_link = date_cell.css('a[onclick*="MediaPlayer"]::text').get()
+                if in_progress_link and "In Progress" in in_progress_link:
+                    self.logger.info(f"Skipping 'In Progress' meeting: {title}")
+                    return None
+
+            start = self._parse_datetime(date_text)
+            if not start:
+                self.logger.warning(f"Could not parse date from upcoming event: {date_text}")
+                return None
+
+            # Extract links (Agenda and Video)
+            links = self._parse_upcoming_event_links(row, response)
+
+            # Build meeting item
+            meeting = Meeting(
+                title=title,
+                description="",
+                classification=CITY_COUNCIL,
+                start=start,
+                end=None,
+                all_day=False,
+                time_notes="",
+                location={
+                    "name": "City Hall",
+                    "address": "175 E 2nd St, Tulsa, OK 74103",
+                },
+                links=links,
+                source=response.url,
+            )
+
+            meeting["status"] = self._get_status(meeting)
+            meeting["id"] = self._get_id(meeting)
+
+            return meeting
+
+        except Exception as e:
+            self.logger.error(f"Error parsing upcoming event row: {e}")
+            return None
+
+    def _parse_upcoming_event_links(self, row, response):
+        """
+        Extract agenda and video links from an upcoming event row.
+
+        Args:
+            row: Scrapy selector for a table row
+            response: Scrapy response object for URL joining
+
+        Returns:
+            List of link dictionaries
+        """
+        links = []
+
+        # Extract Agenda link (uses event_id instead of clip_id)
+        agenda_link = row.css('td.listItem[headers="AgendaLink"] a[href*="AgendaViewer"]::attr(href)').get()
+        if agenda_link:
+            links.append({"href": response.urljoin(agenda_link), "title": "Agenda"})
+
+        # Extract Video/Live link from either:
+        # 1. ViewEventLink column (for live/in-progress meetings)
+        # 2. Date column (for in-progress meetings with embedded link)
+
+        # Check ViewEventLink column
+        video_onclick = row.css('td.listItem[headers="ViewEventLink"] a[onclick*="MediaPlayer"]::attr(onclick)').get()
+
+        # If not found, check Date column for in-progress meetings
+        if not video_onclick:
+            video_onclick = row.css('td.listItem[headers="Date"] a[onclick*="MediaPlayer"]::attr(onclick)').get()
+
+        if video_onclick:
+            # Extract URL from window.open JS call
+            match = re.search(r"window\.open\('([^']+)'", video_onclick)
+            if match:
+                video_link = match.group(1)
+                links.append({"href": response.urljoin(video_link), "title": "Video"})
 
         return links
