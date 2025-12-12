@@ -9,6 +9,7 @@ URL: https://tulsa-ok.granicus.com/ViewPublisher.php?view_id=4
 
 import re
 from datetime import datetime
+from typing import Any, ClassVar
 
 from city_scrapers_core.constants import CITY_COUNCIL
 from city_scrapers_core.items import Meeting
@@ -19,10 +20,16 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
     name = "tulok_citycouncil"
     agency = "Tulsa City Council"
     timezone = "America/Chicago"
-    start_urls = ["https://tulsa-ok.granicus.com/ViewPublisher.php?view_id=4"]
+    start_urls: ClassVar[list[str]] = [
+        "https://tulsa-ok.granicus.com/ViewPublisher.php?view_id=4"
+    ]
+    location = {
+        "name": "City Hall",
+        "address": "175 E 2nd St, Tulsa, OK 74103",
+    }
 
     # Override robots.txt - this is public meeting data
-    custom_settings = {
+    custom_settings: ClassVar[dict[str, Any]] = {
         "ROBOTSTXT_OBEY": False,
     }
 
@@ -71,8 +78,7 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
                     if meeting:
                         yield meeting
 
-        self.logger.info(f"Total City Council meetings found: {total_meetings}")
-
+       
         # Parse upcoming events section
         upcoming_meetings = self._parse_upcoming_events(response)
         for meeting in upcoming_meetings:
@@ -117,10 +123,7 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
                 end=None,
                 all_day=False,
                 time_notes="",
-                location={
-                    "name": "City Hall",
-                    "address": "175 E 2nd St, Tulsa, OK 74103",
-                },
+                location=self.location,
                 links=links,
                 source=response.url,
             )
@@ -130,8 +133,8 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
 
             return meeting
 
-        except Exception as e:
-            self.logger.error(f"Error parsing meeting row: {e}")
+        except Exception:
+            self.logger.exception("Error parsing meeting row")
             return None
 
     def _parse_datetime(self, date_text):
@@ -172,8 +175,8 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
                 self.logger.warning(f"Could not match datetime pattern in: {date_text}")
                 return None
 
-        except Exception as e:
-            self.logger.error(f"Error parsing datetime '{date_text}': {e}")
+        except Exception:
+            self.logger.exception("Error parsing datetime %r", date_text)
             return None
 
     def _parse_links(self, row, response):
@@ -238,8 +241,9 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
                 # Only process City Council meetings (not committee meetings)
                 # Pattern: Must contain "Regular", "Special", or "Emergency"
                 # AND must NOT contain "Committee"
-                if re.search(r'\b(Regular|Special|Emergency)\b', title, re.IGNORECASE) and \
-                   "Committee" not in title:
+                if re.search(r"\b(Regular|Special|Emergency)\b", title, re.IGNORECASE) and not re.search(
+                    r"\bcommittee\b", title, re.IGNORECASE
+                ):
                     meeting = self._parse_upcoming_event_row(row, response)
                     if meeting:
                         meetings.append(meeting)
@@ -304,10 +308,7 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
                 end=None,
                 all_day=False,
                 time_notes="",
-                location={
-                    "name": "City Hall",
-                    "address": "175 E 2nd St, Tulsa, OK 74103",
-                },
+                location=self.location,
                 links=links,
                 source=response.url,
             )
@@ -317,8 +318,8 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
 
             return meeting
 
-        except Exception as e:
-            self.logger.error(f"Error parsing upcoming event row: {e}")
+        except Exception:
+            self.logger.exception("Error parsing upcoming event row")
             return None
 
     def _parse_upcoming_event_links(self, row, response):
