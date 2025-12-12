@@ -23,7 +23,7 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
     start_urls: ClassVar[list[str]] = [
         "https://tulsa-ok.granicus.com/ViewPublisher.php?view_id=4"
     ]
-    location = {
+    location: ClassVar[dict[str, str]] = {
         "name": "City Hall",
         "address": "175 E 2nd St, Tulsa, OK 74103",
     }
