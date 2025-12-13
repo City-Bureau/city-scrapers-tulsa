@@ -230,7 +230,7 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
                 # Only process City Council meetings (not committee meetings)
                 # Pattern: Must contain "Regular", "Special", or "Emergency"
                 # AND must NOT contain "Committee"
-                if re.search(r"\b(Regular|Special|Emergency)\b", title, re.IGNORECASE) and not re.search(
+                if re.search(r"^(Regular|Tulsa City Council|Council|City Council)?\s*(Council|Regular|Emergency Special|Special)?\s*Meeting\s*(Part\s*[\d])?", title, re.IGNORECASE) and not re.search(
                     r"\bcommittee\b", title, re.IGNORECASE
                 ):
                     meeting = self._parse_upcoming_event_row(row, response)
