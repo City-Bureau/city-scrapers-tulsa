@@ -62,7 +62,7 @@ class TulokBoedSpider(CityScrapersSpider):
         """Parse location from MeetingLocation field."""
         location_str = item.get("MeetingLocation", "")
         return {
-            "name": "",
+            "name": location_str.split(",")[0].strip(),
             "address": location_str,
         }
 
