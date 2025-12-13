@@ -43,7 +43,8 @@ class TulokBoedSpider(CityScrapersSpider):
 
     def _parse_title(self, item):
         """Parse meeting title from CleanName or Name field."""
-        return item.get("CleanName") or item.get("Name") or "Board Meeting"
+        title = item.get("CleanName") or item.get("Name") or "Board Meeting"
+        return title.split("(")[0].strip()
 
     def _parse_start(self, item):
         """Parse start datetime from MeetingDateTime field.
