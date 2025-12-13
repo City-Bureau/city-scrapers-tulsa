@@ -121,11 +121,11 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             meeting["status"] = self._get_status(meeting)
             meeting["id"] = self._get_id(meeting)
 
-            return meeting
-
         except Exception:
             self.logger.exception("Error parsing meeting row")
             return None
+        else:
+            return meeting
 
     def _parse_datetime(self, date_text):
         """
@@ -307,11 +307,11 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             meeting["status"] = self._get_status(meeting)
             meeting["id"] = self._get_id(meeting)
 
-            return meeting
-
         except Exception:
             self.logger.exception("Error parsing upcoming event row")
             return None
+        else:
+            return meeting
 
     def _parse_upcoming_event_links(self, row, response):
         """
