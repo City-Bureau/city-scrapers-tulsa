@@ -43,8 +43,8 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
         """
         # Define panel IDs for each year (2016-2025)
         # The panel ID pattern includes the year and a digit suffix
-        year_panel_ids = {year: f"CollapsiblePanel{year}1" for year in range(2016, 2026)}; 
-        total_meetings = 0
+        year_panel_ids = {year: f"CollapsiblePanel{year}1" for year in range(2016, 2026)}
+       
 
         # Iterate through each year's panel
         for year, panel_id in year_panel_ids.items():
@@ -59,7 +59,6 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
 
             if meeting_rows:
                 self.logger.info(f"Found {len(meeting_rows)} City Council meetings for {year}")
-                total_meetings += len(meeting_rows)
 
                 for row in meeting_rows:
                     meeting = self._parse_meeting_row(row, response)
