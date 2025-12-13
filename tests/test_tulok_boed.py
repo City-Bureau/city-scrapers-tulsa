@@ -1,6 +1,7 @@
 """
 Tests for tulok_boed spider.
 """
+from datetime import datetime
 from os.path import dirname, join
 
 from city_scrapers_core.utils import file_response
@@ -71,8 +72,6 @@ def test_links_structure():
 
 def test_start_datetime_format():
     """Verify start datetime is a datetime object."""
-    from datetime import datetime
-
     for item in parsed_items:
         assert item["start"] is not None
         assert isinstance(item["start"], datetime)
