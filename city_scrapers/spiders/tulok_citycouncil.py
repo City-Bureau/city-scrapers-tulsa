@@ -68,7 +68,6 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
                     if meeting:
                         yield meeting
 
-       
         # Parse upcoming events section
         upcoming_meetings = self._parse_upcoming_events(response)
         for meeting in upcoming_meetings:
