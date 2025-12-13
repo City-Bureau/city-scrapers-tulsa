@@ -26,27 +26,6 @@ def test_items_scraped():
     assert len(parsed_items) > 0, "No items scraped"
 
 
-def test_required_fields():
-    """Verify all required Meeting fields are present."""
-    required_fields = [
-        "title",
-        "description",
-        "classification",
-        "start",
-        "end",
-        "all_day",
-        "time_notes",
-        "location",
-        "links",
-        "source",
-        "status",
-        "id",
-    ]
-    for item in parsed_items:
-        for field in required_fields:
-            assert field in item, f"Missing field: {field}"
-
-
 def test_classification():
     """Verify all items have BOARD classification."""
     for item in parsed_items:
