@@ -43,19 +43,7 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
         """
         # Define panel IDs for each year (2016-2025)
         # The panel ID pattern includes the year and a digit suffix
-        year_panel_ids = {
-            2025: "CollapsiblePanel20251",
-            2024: "CollapsiblePanel20241",
-            2023: "CollapsiblePanel20231",
-            2022: "CollapsiblePanel20221",
-            2021: "CollapsiblePanel20211",
-            2020: "CollapsiblePanel20201",
-            2019: "CollapsiblePanel20191",
-            2018: "CollapsiblePanel20181",
-            2017: "CollapsiblePanel20171",
-            2016: "CollapsiblePanel20161",
-        }
-
+        year_panel_ids = {year: f"CollapsiblePanel{year}1" for year in range(2016, 2026)}; 
         total_meetings = 0
 
         # Iterate through each year's panel
@@ -158,12 +146,13 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             # Parse format: "Month Day, Year - HH:MM AM/PM"
             # Example: "November 19, 2025 - 5:00 PM"
             match = re.search(
-                r"([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)",
+                r"([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})\s*-\s*(\d{1,2}):(\d{2})\s*([AaPp])\.?\s*[Mm]\.?",
                 date_text,
             )
 
             if match:
-                month_name, day, year, hour, minute, ampm = match.groups()
+                month_name, day, year, hour, minute, ampm_letter = match.groups()
+                ampm = f"{ampm_letter.upper()}M"
 
                 # Build datetime string
                 datetime_str = f"{month_name} {day}, {year} {hour}:{minute} {ampm}"
@@ -203,7 +192,7 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
         ).get()
         if video_onclick:
             # Extract URL from window.open JS call
-            match = re.search(r"window\.open\('([^']+)'", video_onclick)
+            match = re.search(r'window\.open\(\s*[\'"]([^\'"]+)[\'"]', video_onclick)
             if match:
                 video_link = match.group(1)
                 links.append({"href": response.urljoin(video_link), "title": "Video"})
@@ -353,7 +342,7 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
 
         if video_onclick:
             # Extract URL from window.open JS call
-            match = re.search(r"window\.open\('([^']+)'", video_onclick)
+            match = re.search(r'window\.open\(\s*[\'"]([^\'"]+)[\'"]', video_onclick)
             if match:
                 video_link = match.group(1)
                 links.append({"href": response.urljoin(video_link), "title": "Video"})
