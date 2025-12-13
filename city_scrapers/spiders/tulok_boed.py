@@ -78,4 +78,4 @@ class TulokBoedSpider(CityScrapersSpider):
         meeting_id = item.get("Id")
         if meeting_id:
             return self.agenda_url.format(meeting_id)
-        return self.start_urls[0]
+        return "https://tulsaschools.diligent.community/Portal/"
