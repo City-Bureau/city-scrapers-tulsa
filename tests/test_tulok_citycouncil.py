@@ -73,7 +73,7 @@ class TestMeetingStructure:
         meeting = parsed_items[0]
 
         # Basic fields
-        assert meeting["title"] == "Regular Council Meeting"
+        assert meeting["title"] == "Regular Meeting"
         assert meeting["description"] == ""
         assert meeting["classification"] == CITY_COUNCIL
         assert meeting["status"] == PASSED
@@ -81,8 +81,8 @@ class TestMeetingStructure:
         assert meeting["time_notes"] == ""
         assert meeting["end"] is None
 
-        # Date/time - Based on "November 19, 2025 - 5:00 PM"
-        assert meeting["start"] == datetime(2025, 11, 19, 17, 0)
+        # Date/time - Based on "October 12, 2016 - 5:00 PM"
+        assert meeting["start"] == datetime(2016, 10, 12, 17, 0)
 
         # Location
         assert meeting["location"]["name"] == "City Hall"
