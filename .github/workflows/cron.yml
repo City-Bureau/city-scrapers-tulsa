@@ -1,8 +1,6 @@
 name: Cron
 
 on:
-  schedule:
-    - cron: "1 6 * * *"
   workflow_dispatch:
 
 env:
