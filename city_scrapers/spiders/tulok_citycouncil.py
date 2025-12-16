@@ -41,13 +41,16 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
         Panel IDs follow the pattern: CollapsiblePanel2024X, CollapsiblePanel2023X, etc.
         where X is a digit (varies by year).
         """
-        # Define panel IDs for each year (2016-2025)
+        # Define panel IDs for each year (2016 through next year)
         # The panel ID pattern includes the year and a digit suffix
         # note: The "1" suffix is intentional and required. It specifically targets
         # City Council meetings (CollapsiblePanel{year}1) while excluding other
         # panels like committees (CollapsiblePanel{year}2, CollapsiblePanel{year}3, etc.).
         # Using a prefix selector would incorrectly match ALL panels for the year.
-        year_panel_ids = {year: f"CollapsiblePanel{year}1" for year in range(2016, 2026)}
+        year_panel_ids = {
+            year: f"CollapsiblePanel{year}1"
+            for year in range(2016, datetime.now().year + 2)
+        }
 
         # Iterate through each year's panel
         for year, panel_id in year_panel_ids.items():
