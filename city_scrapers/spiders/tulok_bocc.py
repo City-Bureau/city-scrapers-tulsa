@@ -78,11 +78,7 @@ class TulokBoccSpider(CityScrapersSpider):
 
     def _parse_title(self, raw_event):
         """Parse or generate meeting title."""
-        return (
-            raw_event.get("eventName")
-            or raw_event.get("agendaName")
-            or "Board of County Commissioners"
-        )
+        return raw_event.get("eventName") or "Board of County Commissioners"
 
     def _parse_start(self, raw_event):
         """Parse start datetime as a naive datetime object."""
