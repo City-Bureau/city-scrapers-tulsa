@@ -12,15 +12,14 @@ class TulokBoedSpider(CityScrapersSpider):
     name = "tulok_boed"
     agency = "Tulsa Public Schools Board of Education"
     timezone = "America/Chicago"
-    start_url = "https://tulsaschools.diligent.community/Services/MeetingsService.svc/meetings?from={start_year}&to=9999-12-31"
-    agenda_url = "https://tulsaschools.diligent.community/Portal/MeetingInformation.aspx?Org=Cal&Id={}"
+    start_url = "https://tulsaschools.diligent.community/Services/MeetingsService.svc/meetings?from={start_date}&to=9999-12-31"  # noqa
+    agenda_url = "https://tulsaschools.diligent.community/Portal/MeetingInformation.aspx?Org=Cal&Id={}"  # noqa
     custom_settings = {"ROBOTSTXT_OBEY": False}
 
     def start_requests(self):
-        """Generate initial requests with formatted start year."""
-        current_date = datetime.now().date()
-        last_year = current_date - relativedelta(years=2)
-        url = self.start_url.format(start_year=last_year)
+        """Generate initial requests with formatted start date."""
+        start_date = datetime.now().date() - relativedelta(years=2)
+        url = self.start_url.format(start_date=start_date.isoformat())
         yield scrapy.Request(url=url, callback=self.parse)
 
     def parse(self, response):
