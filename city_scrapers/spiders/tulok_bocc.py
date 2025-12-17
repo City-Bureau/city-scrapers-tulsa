@@ -33,10 +33,9 @@ class TulokBoccSpider(CityScrapersSpider):
         # Then fetch the events from the API
         today = date.today()
         today_str = today.isoformat()
-        year_start = f"{today.year}-01-01"
         urls = [
-            # past events from year start up to today
-            f"{self.api_base_url}/v1/Events?$filter=startDateTime+ge+{year_start}+and+startDateTime+lt+{today_str}+and+{self.category_filter}&$orderby=startDateTime+desc,+eventName+desc",  # noqa
+            # all past events up to today
+            f"{self.api_base_url}/v1/Events?$filter=startDateTime+lt+{today_str}+and+{self.category_filter}&$orderby=startDateTime+desc,+eventName+desc",  # noqa
             # upcoming events (today and future)
             f"{self.api_base_url}/v1/Events?$filter={self.category_filter}+and+startDateTime+ge+{today_str}&$orderby=startDateTime+asc,+eventName+asc",  # noqa
         ]
