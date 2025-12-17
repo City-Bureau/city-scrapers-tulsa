@@ -1,7 +1,7 @@
 import re
-import scrapy
 from datetime import datetime
 
+import scrapy
 from city_scrapers_core.constants import BOARD
 from city_scrapers_core.items import Meeting
 from city_scrapers_core.spiders import CityScrapersSpider
@@ -12,8 +12,8 @@ class TulokBoedSpider(CityScrapersSpider):
     name = "tulok_boed"
     agency = "Tulsa Public Schools Board of Education"
     timezone = "America/Chicago"
-    start_url = "https://tulsaschools.diligent.community/Services/MeetingsService.svc/meetings?from={start_year}&to=9999-12-31"  # noqa
-    agenda_url = "https://tulsaschools.diligent.community/Portal/MeetingInformation.aspx?Org=Cal&Id={}"  # noqa
+    start_url = "https://tulsaschools.diligent.community/Services/MeetingsService.svc/meetings?from={start_year}&to=9999-12-31"
+    agenda_url = "https://tulsaschools.diligent.community/Portal/MeetingInformation.aspx?Org=Cal&Id={}"
     custom_settings = {"ROBOTSTXT_OBEY": False}
 
     def start_requests(self):
