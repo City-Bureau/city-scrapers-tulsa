@@ -117,7 +117,7 @@ spider_configs = [
         "class_name": "TulokCommunityDevSpider",
         "name": "tulok_community_dev",
         "agency": "Tulsa Community Development Committee",
-        "board_id": "862",
+        "board_id": "868",
         "location": {
             "name": "2nd Floor Council Chambers, City Hall at One Technology Center",
             "address": "175 E 2nd St, Tulsa, OK 74103",
@@ -148,7 +148,7 @@ spider_configs = [
         "class_name": "TulokStadiumTrustSpider",
         "name": "tulok_stadium_trust",
         "agency": "Tulsa Stadium Trust",
-        "board_id": "895",
+        "board_id": "897",
         "location": {
             "name": "Norlem Conference Center",
             "address": "201 North Elgin Avenue, Tulsa, OK 74120",
@@ -158,7 +158,7 @@ spider_configs = [
         "class_name": "TulokWomensSpider",
         "name": "tulok_womens",
         "agency": "Tulsa Women's Commission",
-        "board_id": "902",
+        "board_id": "874",
         "location": {
             "name": "Room 411, City Hall at One Technology Center",
             "address": "175 E 2nd St, Tulsa, OK 74103",
