@@ -105,7 +105,10 @@ def test_location():
 
 def test_source():
     for item in parsed_items:
-        assert item["source"].startswith("https://tulsacook.api.civicclerk.com/")
+        assert (
+            item["source"]
+            == "https://www2.tulsacounty.org/Legacy/agendasdetail_civic.aspx?entity=BOCC%20-%20Board%20of%20County%20Commissioners"  # noqa
+        )
 
 
 def test_links():

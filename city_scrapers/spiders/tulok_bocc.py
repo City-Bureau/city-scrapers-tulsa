@@ -63,7 +63,7 @@ class TulokBoccSpider(CityScrapersSpider):
                 time_notes=self.time_notes,
                 location=self._parse_location(raw_event),
                 links=self._parse_links(raw_event),
-                source=response.url,
+                source=self.info_page_url,
             )
 
             meeting["status"] = self._get_status(meeting)
