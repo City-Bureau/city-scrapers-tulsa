@@ -16,7 +16,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
     ]
 
     meeting_location = {
-        "name": "Union Public Schools Administration Building",
+        "name": "Union Public Schools Education Service Center",
         "address": "8506 E 61st St, Tulsa, OK 74133",
     }
 

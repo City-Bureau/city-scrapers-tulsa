@@ -92,7 +92,7 @@ def test_id_and_status():
 def test_location():
     for item in parsed_items:
         assert item["location"] == {
-            "name": "Union Public Schools Administration Building",
+            "name": "Union Public Schools Education Service Center",
             "address": "8506 E 61st St, Tulsa, OK 74133",
         }
 
