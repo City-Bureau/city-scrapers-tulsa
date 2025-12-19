@@ -44,6 +44,9 @@ jobs:
           if [ -d ".venv" ] && [ ! -f ".venv/bin/python" ]; then
             echo "Virtual environment exists but Python executable is missing. Rebuilding."
             rm -rf .venv
+          elif ! .venv/bin/python --version 2>&1 | grep -q "Python ${{ env.PYTHON_VERSION }}"; then
+            echo "Virtual environment Python version mismatch. Rebuilding."
+            rm -rf .venv
           elif [ ! -d ".venv" ]; then
             echo "No virtual environment found. Will build new one."
           else
