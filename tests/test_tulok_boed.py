@@ -26,7 +26,7 @@ parsed_item = parsed_items[0]
 
 
 def test_count():
-    assert len(parsed_items) == 50
+    assert len(parsed_items) == 56
 
 
 def test_title():
