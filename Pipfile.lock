@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "fa399c44b09bc6d004f660f21b2f46c8c1256008a075609209329fec4bb06bbb"
+            "sha256": "24e15f4e34476568d9de7b4fcb26b8cbbf5c576ef7c469f7f5370e9fa43f1172"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -826,12 +826,12 @@
         },
         "scrapy": {
             "hashes": [
-                "sha256:9bf36700aefa4983cc48b2cb0e1564161a340e19f73862778e2ed44ec5bbde6a",
-                "sha256:e09bce40c56b56f9f86b0d078a0e5cdd08283c83076170ce7a8eec7189ac2493"
+                "sha256:4be353d6abbb942a9f7e7614ca8b5f3d9037381176ac8d8859c8cac676e74fa0",
+                "sha256:dfbd565384fc3fffeba121f5a3a2d0899ac1f756d41432ca0879933fbfb3401d"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.9'",
-            "version": "==2.13.4"
+            "markers": "python_version >= '3.8'",
+            "version": "==2.11.2"
         },
         "scrapy-sentry-errors": {
             "hashes": [
@@ -866,6 +866,14 @@
             ],
             "markers": "python_version >= '3.8'",
             "version": "==24.2.0"
+        },
+        "setuptools": {
+            "hashes": [
+                "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922",
+                "sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c"
+            ],
+            "markers": "python_version >= '3.9'",
+            "version": "==80.9.0"
         },
         "six": {
             "hashes": [
@@ -923,7 +931,7 @@
             "markers": "python_version >= '3.9'",
             "version": "==2.3.1"
         },
-        "zope-interface": {
+        "zope.interface": {
             "hashes": [
                 "sha256:127b0e4c873752b777721543cf8525b3db5e76b88bd33bab807f03c568e9003f",
                 "sha256:169214da1b82b7695d1a36f92d70b11166d66b6b09d03df35d150cc62ac52276",
