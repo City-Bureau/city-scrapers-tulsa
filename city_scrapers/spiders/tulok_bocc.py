@@ -30,6 +30,10 @@ class TulokBoccSpider(CityScrapersSpider):
                     self.time_notes = " ".join(p.split())
                     break
 
+        # Add extra notes about location and cancellation information
+        if self.time_notes:
+            self.time_notes += " For meetings prior to February 2021, specific location details are only available in the meeting agenda. Note that some meetings may be cancelled as indicated in the agenda, even if the status shows as passed."  # noqa
+
         # Then fetch the events from the API
         today = date.today()
         today_str = today.isoformat()
