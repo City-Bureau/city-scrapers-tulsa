@@ -119,9 +119,6 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
     base_url = "https://www.cityoftulsa.org"
     api_url = "https://www.cityoftulsa.org/umbraco/surface/AgendasByBoard/GetAgendasByBoard/"  # noqa
     upcoming_url = "https://tulsa-ok.granicus.com/ViewPublisher.php?view_id=4"
-    video_url = (
-        "https://tulsa-ok.granicus.com/player/clip/{agenda_id}?view_id=4&redirect=true"
-    )
 
     def start_requests(self):
         """
