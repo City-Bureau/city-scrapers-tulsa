@@ -79,7 +79,7 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
         """
         The secondary URL used for scraping upcoming agency meetings
         provides a list of all meetings for different agencies combined
-        into one. This function determine if a meeting title matches with
+        into one. This function determines if a meeting title matches with
         the correct agency by comparing meaningful keywords.
 
         Special handling for Tulsa City Council matches since the upcoming

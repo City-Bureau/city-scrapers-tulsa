@@ -1,10 +1,10 @@
+import json
 from datetime import datetime
 from os.path import dirname, join
 
-from city_scrapers_core.constants import PASSED, COMMITTEE
+from city_scrapers_core.constants import COMMITTEE, PASSED
 from city_scrapers_core.utils import file_response
 from freezegun import freeze_time
-import json
 from scrapy import Request
 
 from city_scrapers.spiders import tulsa_city
@@ -39,10 +39,7 @@ def test_count():
 
 
 def test_title():
-    assert (
-        parsed_items[0]["title"]
-        == "Audit Committee of the City of Tulsa (AUDIT)"
-    )
+    assert parsed_items[0]["title"] == "Audit Committee of the City of Tulsa (AUDIT)"
 
 
 def test_description():
