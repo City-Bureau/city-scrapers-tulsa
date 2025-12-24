@@ -1,5 +1,7 @@
+import re
 from datetime import datetime
 
+import scrapy
 from city_scrapers_core.constants import (
     CANCELLED,
     CLASSIFICATIONS,
@@ -41,6 +43,65 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
     and define the required static variables: agency, name, board_id, and location.
     """
 
+    # Common words to exclude when matching agency names to meeting titles.
+    # These words are too generic to be meaningful for matching purposes.
+    STOP_WORDS = {
+        "of",
+        "the",
+        "for",
+        "in",
+        "at",
+        "to",
+        "a",
+        "an",
+        "and",
+        "or",
+        "city",
+        "tulsa",
+        "area",
+        "greater",
+        "commission",
+        "committee",
+        "board",
+        "authority",
+        "trust",
+        "affairs",
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Precompute agency keywords once
+        self.agency_keywords = (
+            set(self.agency.replace("-", " ").lower().split()) - self.STOP_WORDS
+        )
+
+    def _is_agency_match(self, title):
+        """
+        The secondary URL used for scraping upcoming agency meetings
+        provides a list of all meetings for different agencies combined
+        into one. This function determine if a meeting title matches with
+        the correct agency by comparing meaningful keywords.
+
+        Special handling for Tulsa City Council matches since the upcoming
+        meetings page provides this specific agency's meetings with these
+        titles: "Regular Council Meeting" or "Council Meeting Special".
+        """
+        row_title = set(title.replace("-", " ").lower().split())
+
+        # Special case for Tulsa City Council
+        if self.name == "tulok_city_council":
+            s1 = {"regular", "council", "meeting"}
+            s2 = {"council", "meeting", "special"}
+            return row_title.issubset(s1) or row_title.issubset(s2)
+
+        row_keywords = row_title - self.STOP_WORDS
+
+        title_match = row_keywords.intersection(self.agency_keywords)
+
+        # Need at least 2 meaningful keyword matches
+        min_matches = min(2, len(self.agency_keywords))
+        return len(title_match) >= min_matches
+
     custom_settings = {
         "ROBOTSTXT_OBEY": False,
     }
@@ -57,12 +118,17 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
     timezone = "America/Chicago"
     base_url = "https://www.cityoftulsa.org"
     api_url = "https://www.cityoftulsa.org/umbraco/surface/AgendasByBoard/GetAgendasByBoard/"  # noqa
+    upcoming_url = "https://tulsa-ok.granicus.com/ViewPublisher.php?view_id=4"
+    video_url = (
+        "https://tulsa-ok.granicus.com/player/clip/{agenda_id}?view_id=4&redirect=true"
+    )
 
     def start_requests(self):
         """
         This spider mixin uses a POST request to fetch meeting
         data from the Tulsa meeting API using a board ID which
-        is specified in each child spider class.
+        is specified in each child spider class. This spider also
+        fetches upcoming meetings from a separate URL.
         """
         yield FormRequest(
             url=self.api_url,
@@ -70,11 +136,24 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
                 "boardID": str(self.board_id),
                 "subCommitteeID": str(self.sub_committee_id),
             },
+            callback=self.parse_upcoming,
+            meta={"api_data": None},
+        )
+
+    def parse_upcoming(self, response):
+        api_data = self.filter_meetings_data(response)
+
+        yield scrapy.Request(
+            self.upcoming_url,
             callback=self.parse,
+            meta={"api_data": api_data},
         )
 
     def parse(self, response):
-        meetings_data = self.filter_meetings_data(response)
+        api_url_meetings = response.meta.get("api_data", [])
+        upcoming_meetings = self._get_upcoming_meetings(response)
+
+        meetings_data = upcoming_meetings + api_url_meetings
 
         for meeting_data in meetings_data:
             if "Annual" not in meeting_data.get("Meeting_Type", ""):
@@ -82,6 +161,78 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
 
                 if meeting:
                     yield meeting
+
+    def _get_upcoming_meetings(self, response):
+        upcoming_table = response.css('table.listingTable[summary*="Upcoming"]')
+        meeting_rows = upcoming_table.css("tbody tr.listingRow")
+        upcoming_meetings = []
+
+        for row in meeting_rows:
+            title = row.css('td.listItem[headers="Name"]::text').get()
+            if not title:
+                continue
+
+            if not self._is_agency_match(title):
+                continue
+
+            meeting_data = self._extract_upcoming_meeting_data(row, title, response)
+            if meeting_data:
+                upcoming_meetings.append(meeting_data)
+
+        return upcoming_meetings
+
+    def _extract_upcoming_meeting_data(self, row, title, response):
+        meeting_data = {}
+
+        agenda_link = row.css(
+            'td.listItem[headers="AgendaLink"] a[href*="AgendaViewer"]::attr(href)'
+        ).get()
+        if agenda_link:
+            meeting_data["Agenda_Link"] = response.urljoin(agenda_link)
+
+        video_link = self._extract_video_link(row, response)
+        if video_link:
+            meeting_data["Video_Link"] = video_link
+
+        meeting_data["Meeting_Date_Time"] = self._parse_upcoming_meeting_date(row)
+        meeting_data["Meeting_Type"] = (
+            "Special" if "special" in title.lower() else "Regular"
+        )
+        meeting_data["Board_Name"] = self.agency
+
+        return meeting_data
+
+    def _parse_upcoming_meeting_date(self, row):
+        try:
+            # This can contain either plain text date or "In Progress" with embedded link  # noqa
+            date_text = (
+                row.css('td.listItem[headers="Date"]').xpath("normalize-space()").get()
+            )
+
+            if not date_text or "In Progress" in date_text:
+                return None
+
+            return datetime.strptime(date_text, "%B %d, %Y - %I:%M %p")
+        except Exception as e:
+            self.logger.exception(f"Failed to parse upcoming meeting date: {e}")
+            return None
+
+    def _extract_video_link(self, row, response):
+        video_onclick = (
+            row.css(
+                'td.listItem[headers="ViewEventLink"] a[onclick*="MediaPlayer"]::attr(onclick)'  # noqa
+            ).get()
+            or row.css(
+                'td.listItem[headers="Date"] a[onclick*="MediaPlayer"]::attr(onclick)'
+            ).get()
+        )
+
+        if video_onclick:
+            match = re.search(r'window\.open\(\s*[\'"]([^\'"]+)[\'"]', video_onclick)
+            if match:
+                return response.urljoin(match.group(1))
+
+        return None
 
     def filter_meetings_data(self, response):
         """
@@ -144,6 +295,9 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
         return board_name or self.agency
 
     def _parse_start(self, item):
+        if item.get("Meeting_Date_Time"):
+            return item.get("Meeting_Date_Time")
+
         date_str = item.get("Meeting_Date", "")
         time_str = item.get("Meeting_Time", "")
 
@@ -187,6 +341,22 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
                         f"?DocumentType=Agenda&DocumentIdentifiers={agenda_id}"
                     ),
                     "title": "Agenda",
+                }
+            )
+
+        if item.get("Agenda_Link"):
+            links.append(
+                {
+                    "href": item.get("Agenda_Link"),
+                    "title": "Agenda",
+                }
+            )
+
+        if item.get("Video_Link"):
+            links.append(
+                {
+                    "href": item.get("Video_Link"),
+                    "title": "Video",
                 }
             )
 

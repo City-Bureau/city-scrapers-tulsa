@@ -1,19 +1,27 @@
 from datetime import datetime
 from os.path import dirname, join
 
-from city_scrapers_core.constants import CANCELLED, COMMITTEE
+from city_scrapers_core.constants import PASSED, COMMITTEE
 from city_scrapers_core.utils import file_response
 from freezegun import freeze_time
+import json
+from scrapy import Request
 
-# Import the module where spiders are created
 from city_scrapers.spiders import tulsa_city
 
-# Get the dynamically created spider class from globals
 TulokAuditCommitteeSpider = tulsa_city.TulokAuditCommitteeSpider
 
 test_response = file_response(
-    join(dirname(__file__), "files", "tulok_audit_committee.json"),
-    url="https://www.cityoftulsa.org/umbraco/surface/AgendasByBoard/GetAgendasByBoard/",
+    join(dirname(__file__), "files", "tulsa_city_upcoming_meetings.html"),
+    url="https://tulsa-ok.granicus.com/ViewPublisher.php?view_id=4",
+)
+
+with open(join(dirname(__file__), "files", "tulok_audit_committee.json")) as f:
+    api_data = json.load(f)
+
+test_response.request = Request(
+    url=test_response.url,
+    meta={"api_data": api_data},
 )
 
 spider = TulokAuditCommitteeSpider()
@@ -27,13 +35,13 @@ freezer.stop()
 
 
 def test_count():
-    assert len(parsed_items) == 132
+    assert len(parsed_items) == 152
 
 
 def test_title():
     assert (
         parsed_items[0]["title"]
-        == "Audit Committee of the City of Tulsa (AUDIT) - Canceled"
+        == "Audit Committee of the City of Tulsa (AUDIT)"
     )
 
 
@@ -65,7 +73,7 @@ def test_id():
 
 
 def test_status():
-    assert parsed_items[0]["status"] == CANCELLED
+    assert parsed_items[0]["status"] == PASSED
 
 
 def test_location():
@@ -86,7 +94,7 @@ def test_links():
     assert len(parsed_items[0]["links"]) == 1
     assert parsed_items[0]["links"] == [
         {
-            "href": "https://www.cityoftulsa.org/apps/COTDisplayDocument/?DocumentType=Agenda&DocumentIdentifiers=31483",  # noqa
+            "href": "https://www.cityoftulsa.org/apps/COTDisplayDocument/?DocumentType=Agenda&DocumentIdentifiers=31465",  # noqa
             "title": "Agenda",
         },
     ]

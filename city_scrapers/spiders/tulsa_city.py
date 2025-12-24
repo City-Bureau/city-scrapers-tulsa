@@ -37,6 +37,7 @@ spider_configs = [
             "name": "Room 411, City Hall at One Technology Center",
             "address": "175 E 2nd St, Tulsa, OK 74103",
         },
+        "time_notes": "Check the meeting agenda for meeting location and time details.",
     },
     {
         "class_name": "TulokHispanicLatinxAffairsSpider",
