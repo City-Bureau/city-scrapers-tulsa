@@ -43,10 +43,10 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
         """
         # Define panel IDs for each year (2016 through next year)
         # The panel ID pattern includes the year and a digit suffix
-        # note: The "1" suffix is intentional and required. It specifically targets
-        # City Council meetings (CollapsiblePanel{year}1) while excluding other
-        # panels like committees (CollapsiblePanel{year}2, CollapsiblePanel{year}3, etc.).
-        # Using a prefix selector would incorrectly match ALL panels for the year.
+        # note: The "1" suffix is intentional and required. It specifically
+        # targets City Council meetings (CollapsiblePanel{year}1) while
+        # excluding other panels like committees (CollapsiblePanel{year}2,
+        # CollapsiblePanel{year}3, etc.).
         year_panel_ids = {
             year: f"CollapsiblePanel{year}1"
             for year in range(2016, datetime.now().year + 2)
@@ -57,14 +57,20 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             city_council_panel = response.css(f"div#{panel_id}")
 
             if not city_council_panel:
-                self.logger.info(f"Could not find City Council panel for {year} (ID: {panel_id})")
+                self.logger.info(
+                    f"Could not find City Council panel for {year} (ID: {panel_id})"
+                )
                 continue
 
             # Extract all meeting rows from the table
-            meeting_rows = city_council_panel.css("table.listingTable tbody tr.listingRow")
+            meeting_rows = city_council_panel.css(
+                "table.listingTable tbody tr.listingRow"
+            )
 
             if meeting_rows:
-                self.logger.info(f"Found {len(meeting_rows)} City Council meetings for {year}")
+                self.logger.info(
+                    f"Found {len(meeting_rows)} City Council meetings for {year}"
+                )
 
                 for row in meeting_rows:
                     meeting = self._parse_meeting_row(row, response)
@@ -96,7 +102,9 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
                 title = "City Council Meeting"
 
             # Extract date and time
-            date_text = row.css('td.listItem[headers*="Date"]').xpath("normalize-space()").get()
+            date_text = (
+                row.css('td.listItem[headers*="Date"]').xpath("normalize-space()").get()
+            )
 
             start = self._parse_datetime(date_text)
             if not start:
@@ -149,10 +157,11 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
         try:
             # Parse format: "Month Day, Year - HH:MM AM/PM"
             # Example: "November 19, 2025 - 5:00 PM"
-            match = re.search(
-                r"([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})\s*-\s*(\d{1,2}):(\d{2})\s*([AaPp])\.?\s*[Mm]\.?",
-                date_text,
+            pattern = (
+                r"([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})\s*-\s*"
+                r"(\d{1,2}):(\d{2})\s*([AaPp])\.?\s*[Mm]\.?"
             )
+            match = re.search(pattern, date_text)
 
             if match:
                 month_name, day, year, hour, minute, ampm_letter = match.groups()
@@ -234,9 +243,13 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
                 # Only process City Council meetings (not committee meetings)
                 # Pattern: Must contain "Regular", "Special", or "Emergency"
                 # AND must NOT contain "Committee"
-                if re.search(r"^(Regular|Tulsa City Council|Council|City Council)?\s*(Council|Regular|Emergency Special|Special)?\s*Meeting\s*(Part\s*[\d])?", title, re.IGNORECASE) and not re.search(
-                    r"\bcommittee\b", title, re.IGNORECASE
-                ):
+                if re.search(
+                    r"^(Regular|Tulsa City Council|Council|City Council)?\s*"
+                    r"(Council|Regular|Emergency Special|Special)?\s*"
+                    r"Meeting\s*(Part\s*[\d])?",
+                    title,
+                    re.IGNORECASE,
+                ) and not re.search(r"\bcommittee\b", title, re.IGNORECASE):
                     meeting = self._parse_upcoming_event_row(row, response)
                     if meeting:
                         meetings.append(meeting)
@@ -264,8 +277,8 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             else:
                 title = "City Council Meeting"
 
-            # Extract date and time from the Date column
-            # This can contain either plain text date or "In Progress" with embedded link
+            # Extract date and time from the Date column. This can contain
+            # either plain text date or "In Progress" with embedded link
             date_cell = row.css('td.listItem[headers="Date"]')
 
             # Get normalized text (automatically handles whitespace)
@@ -275,18 +288,22 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             if date_text:
                 date_text = date_text.replace("In Progress", "").strip()
 
-            # If no date found, check if this is an "In Progress" meeting
-            # For "In Progress" meetings, we'll skip them as they don't have a future date
+            # If no date found, check if this is an "In Progress" meeting.
+            # For "In Progress" meetings, skip them as they don't have a date
             if not date_text:
                 # Check if the date cell contains "In Progress" link
-                in_progress_link = date_cell.css('a[onclick*="MediaPlayer"]::text').get()
+                in_progress_link = date_cell.css(
+                    'a[onclick*="MediaPlayer"]::text'
+                ).get()
                 if in_progress_link and "In Progress" in in_progress_link:
                     self.logger.info(f"Skipping 'In Progress' meeting: {title}")
                     return None
 
             start = self._parse_datetime(date_text)
             if not start:
-                self.logger.warning(f"Could not parse date from upcoming event: {date_text}")
+                self.logger.warning(
+                    f"Could not parse date from upcoming event: {date_text}"
+                )
                 return None
 
             # Extract links (Agenda and Video)
@@ -329,7 +346,9 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
         links = []
 
         # Extract Agenda link (uses event_id instead of clip_id)
-        agenda_link = row.css('td.listItem[headers="AgendaLink"] a[href*="AgendaViewer"]::attr(href)').get()
+        agenda_link = row.css(
+            'td.listItem[headers="AgendaLink"] a[href*="AgendaViewer"]::attr(href)'
+        ).get()
         if agenda_link:
             links.append({"href": response.urljoin(agenda_link), "title": "Agenda"})
 
@@ -338,11 +357,16 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
         # 2. Date column (for in-progress meetings with embedded link)
 
         # Check ViewEventLink column
-        video_onclick = row.css('td.listItem[headers="ViewEventLink"] a[onclick*="MediaPlayer"]::attr(onclick)').get()
+        video_onclick = row.css(
+            'td.listItem[headers="ViewEventLink"] '
+            'a[onclick*="MediaPlayer"]::attr(onclick)'
+        ).get()
 
         # If not found, check Date column for in-progress meetings
         if not video_onclick:
-            video_onclick = row.css('td.listItem[headers="Date"] a[onclick*="MediaPlayer"]::attr(onclick)').get()
+            video_onclick = row.css(
+                'td.listItem[headers="Date"] a[onclick*="MediaPlayer"]::attr(onclick)'
+            ).get()
 
         if video_onclick:
             # Extract URL from window.open JS call
