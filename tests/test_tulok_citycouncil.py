@@ -45,12 +45,16 @@ class TestMeetingCounts:
     def test_historical_vs_upcoming_split(self, parsed_items):
         """Test that historical and upcoming meetings are correctly split."""
         historical = [
-            item for item in parsed_items
-            if item["start"].year < 2025 or (item["start"].year == 2025 and item["start"].month < 12)
+            item
+            for item in parsed_items
+            if item["start"].year < 2025
+            or (item["start"].year == 2025 and item["start"].month < 12)
         ]
         upcoming = [
-            item for item in parsed_items
-            if (item["start"].year == 2025 and item["start"].month == 12) or (item["start"].year == 2026)
+            item
+            for item in parsed_items
+            if (item["start"].year == 2025 and item["start"].month == 12)
+            or (item["start"].year == 2026)
         ]
 
         assert len(historical) == EXPECTED_HISTORICAL_MEETINGS
@@ -130,16 +134,23 @@ class TestMeetingLinks:
         """Test that upcoming event agenda links use event_id (not clip_id)."""
         upcoming_with_agenda = next(
             (
-                item for item in parsed_items
-                if item["start"].year >= 2025 and item["start"].month == 12 and item["links"]
+                item
+                for item in parsed_items
+                if item["start"].year >= 2025
+                and item["start"].month == 12
+                and item["links"]
             ),
             None,
         )
 
         if upcoming_with_agenda:
             agenda_link = next(
-                (link for link in upcoming_with_agenda["links"] if link["title"] == "Agenda"),
-                None
+                (
+                    link
+                    for link in upcoming_with_agenda["links"]
+                    if link["title"] == "Agenda"
+                ),
+                None,
             )
             if agenda_link:
                 assert "event_id" in agenda_link["href"]
@@ -160,9 +171,13 @@ class TestMeetingFiltering:
 
         # Check specific special meeting in December exists
         special_dec = next(
-            (item for item in parsed_items
-             if "Council Special Meeting" in item["title"] and item["start"].month == 12),
-            None
+            (
+                item
+                for item in parsed_items
+                if "Council Special Meeting" in item["title"]
+                and item["start"].month == 12
+            ),
+            None,
         )
         assert special_dec is not None
 
