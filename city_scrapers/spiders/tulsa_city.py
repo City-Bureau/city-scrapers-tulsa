@@ -23,12 +23,14 @@ from city_scrapers.mixins.tulsa_city import TulsaCityMixin
 # Board IDs extracted from https://www.cityoftulsa.org/government/meeting-agendas/
 spider_configs = [
     # Core City Bodies
-    {
-        "class_name": "TulokCityCouncilSpider",
-        "name": "tulok_city_council",
-        "agency": "Tulsa City Council",
-        "board_id": "899",
-    },
+    # NOTE: City Council removed - use tulok_citycouncil (Granicus) instead
+    # which provides video links and live streaming. See issue discussion.
+    # {
+    #     "class_name": "TulokCityCouncilSpider",
+    #     "name": "tulok_city_council",
+    #     "agency": "Tulsa City Council",
+    #     "board_id": "899",
+    # },
     {
         "class_name": "TulokBoaSpider",
         "name": "tulok_boa",
