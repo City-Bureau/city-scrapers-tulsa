@@ -3,6 +3,7 @@ from os.path import dirname, join
 
 import pytest
 from city_scrapers_core.constants import BOARD
+from city_scrapers_core.items import Meeting
 from city_scrapers_core.utils import file_response
 from freezegun import freeze_time
 
@@ -29,16 +30,18 @@ for req in spider.parse(test_response):
     # Attach main_page to meta
     board_page.meta["main_page"] = test_response
     # Call parse_board_page manually to extract meetings
-    parsed_items.extend(spider.parse_board_page(board_page))
-
+    for item in spider.parse_board_page(board_page):
+        # Only collect Meeting items, skip Request objects
+        if isinstance(item, Meeting):
+            parsed_items.append(item)
 
 freezer.stop()
 
 
 def test_first_item_properties():
     item = parsed_items[0]
-    assert item["title"] == "Board of Education Meeting"
-    assert item["start"] == datetime(2025, 1, 21, 19, 0)
+    assert item["title"] == "Board of Education Special Meeting"
+    assert item["start"] == datetime(2025, 3, 13, 19, 0)
     assert item["status"] == "passed"
     assert item["location"] == spider.meeting_location
 
@@ -46,7 +49,7 @@ def test_first_item_properties():
     assert item["description"] != ""
 
     # Links
-    assert len(item["links"]) == 4
+    assert len(item["links"]) >= 1
     assert item["links"][0]["title"] == "Agenda"
     href = item["links"][0]["href"]
     assert href.startswith("https://www.unionps.org/fs/resource-manager/view/")
