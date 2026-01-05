@@ -21,7 +21,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
     }
 
     date_re = re.compile(
-        r"(January|February|March|April|May|June|July|August|September|October|November|December)" # noqa
+        r"(January|February|March|April|May|June|July|August|September|October|November|December)"  # noqa
         r"\s+([0-9lI]{1,2})(?:,?\s+)(\d{4})",
         flags=re.IGNORECASE,
     )
