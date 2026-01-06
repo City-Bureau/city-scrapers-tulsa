@@ -16,24 +16,38 @@ test_response = file_response(
 )
 spider = TulokUnionpsSpider()
 
-# Freeze time for consistent test results
 freezer = freeze_time("2025-11-25")
 freezer.start()
 
 parsed_items = []
+board_report_requests = []
+
 # Run spider.parse() → yields only a Request
 for req in spider.parse(test_response):
     board_page = file_response(
         join(dirname(__file__), "files", "tulok_unionps_board.html"),
         url="https://www.unionps.org/about/board-of-education",
     )
-    # Attach main_page to meta
     board_page.meta["main_page"] = test_response
-    # Call parse_board_page manually to extract meetings
+
+    # Collect meetings + requests
     for item in spider.parse_board_page(board_page):
-        # Only collect Meeting items, skip Request objects
         if isinstance(item, Meeting):
             parsed_items.append(item)
+        else:
+            board_report_requests.append(item)
+
+# Follow board report pages and collect the meetings they yield
+for board_req in board_report_requests:
+    board_report_page = file_response(
+        join(dirname(__file__), "files", "tulok_unionps_board_report.html"),
+        url=board_req.url,
+    )
+    board_report_page.meta.update(board_req.meta)
+
+    for meeting_item in spider.parse_board_report(board_report_page):
+        if isinstance(meeting_item, Meeting):
+            parsed_items.append(meeting_item)
 
 freezer.stop()
 
@@ -115,6 +129,13 @@ def test_links():
             assert "href" in link and "title" in link
             assert link["href"]
             assert link["title"] in ["Agenda", "Minutes", "Board Report", "Video"]
+
+
+def test_meetings_have_video():
+    """Test that at least some meetings have video links"""
+    assert any(
+        link["title"] == "Video" for item in parsed_items for link in item["links"]
+    )
 
 
 def test_classification():

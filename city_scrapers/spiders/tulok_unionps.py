@@ -38,12 +38,10 @@ class TulokUnionpsSpider(CityScrapersSpider):
         """Parse description and prepare meetings."""
         main_page = response.meta["main_page"]
 
-        # Extract description
         p_html = response.css("#fsEl_21196 p").get()
         desc = p_html.split("<br")[0]
         desc = scrapy.Selector(text=desc).xpath("string()").get().strip()
 
-        # Extract time notes
         time_notes = (
             " ".join(
                 t.strip().replace("\xa0", " ")
@@ -84,14 +82,14 @@ class TulokUnionpsSpider(CityScrapersSpider):
                     callback=self.parse_board_report,
                     errback=self.handle_board_report_error,
                     meta={
-                        "meeting_data": (
-                            title,
-                            desc,
-                            start_dt,
-                            time_notes,
-                            links,
-                            main_page.url,
-                        )
+                        "meeting_data": {
+                            "title": title,
+                            "description": desc,
+                            "start": start_dt,
+                            "time_notes": time_notes,
+                            "links": links,
+                            "source_url": main_page.url,
+                        }
                     },
                     dont_filter=True,
                 )
@@ -124,14 +122,21 @@ class TulokUnionpsSpider(CityScrapersSpider):
 
     def parse_board_report(self, response):
         """Extract YouTube video from Board Report page."""
-        title, desc, start_dt, time_notes, links, source_url = response.meta[
-            "meeting_data"
-        ]
+        data = response.meta["meeting_data"]
+
         if response.status != 404:
             youtube_link = self._extract_youtube_link(response)
             if youtube_link:
-                links.append({"href": youtube_link, "title": "Video"})
-        yield self._create_meeting(title, desc, start_dt, time_notes, links, source_url)
+                data["links"].append({"href": youtube_link, "title": "Video"})
+
+        yield self._create_meeting(
+            data["title"],
+            data["description"],
+            data["start"],
+            data["time_notes"],
+            data["links"],
+            data["source_url"],
+        )
 
     def _extract_youtube_link(self, response):
         """Extract YouTube link from the 'Video' section specifically."""
@@ -165,10 +170,15 @@ class TulokUnionpsSpider(CityScrapersSpider):
 
     def handle_board_report_error(self, failure):
         """Yield meeting without video if Board Report fetch fails."""
-        title, desc, start_dt, time_notes, links, source_url = failure.request.meta[
-            "meeting_data"
-        ]
-        yield self._create_meeting(title, desc, start_dt, time_notes, links, source_url)
+        data = failure.request.meta["meeting_data"]
+        yield self._create_meeting(
+            data["title"],
+            data["description"],
+            data["start"],
+            data["time_notes"],
+            data["links"],
+            data["source_url"],
+        )
 
     def _create_meeting(
         self, title, description, start_dt, time_notes, links, source_url
@@ -202,6 +212,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
         )
 
     def _parse_start_from_text(self, text):
+        """Parse a date from text, fixing common OCR typos."""
         m = self.date_re.search(text)
         if not m:
             return None
