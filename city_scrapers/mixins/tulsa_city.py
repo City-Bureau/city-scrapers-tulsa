@@ -171,13 +171,14 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
         city_meetings_by_date = {}
         for meeting in city_api_meetings:
             meeting_date = self._parse_start(meeting)
-            city_meetings_by_date[meeting_date] = meeting
+            if meeting_date is not None:
+                city_meetings_by_date[meeting_date] = meeting
 
         filtered_meetings = list(city_api_meetings)
 
         for g_meeting in granicus_meetings:
             g_date = g_meeting.get("Meeting_Date_Time")
-            if g_date not in city_meetings_by_date:
+            if g_date is None or g_date not in city_meetings_by_date:
                 filtered_meetings.append(g_meeting)
 
         return filtered_meetings
