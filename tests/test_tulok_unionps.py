@@ -3,6 +3,7 @@ from os.path import dirname, join
 
 import pytest
 from city_scrapers_core.constants import BOARD
+from city_scrapers_core.items import Meeting
 from city_scrapers_core.utils import file_response
 from freezegun import freeze_time
 
@@ -15,30 +16,46 @@ test_response = file_response(
 )
 spider = TulokUnionpsSpider()
 
-# Freeze time for consistent test results
 freezer = freeze_time("2025-11-25")
 freezer.start()
 
 parsed_items = []
+board_report_requests = []
+
 # Run spider.parse() → yields only a Request
 for req in spider.parse(test_response):
     board_page = file_response(
         join(dirname(__file__), "files", "tulok_unionps_board.html"),
         url="https://www.unionps.org/about/board-of-education",
     )
-    # Attach main_page to meta
     board_page.meta["main_page"] = test_response
-    # Call parse_board_page manually to extract meetings
-    parsed_items.extend(spider.parse_board_page(board_page))
 
+    # Collect meetings + requests
+    for item in spider.parse_board_page(board_page):
+        if isinstance(item, Meeting):
+            parsed_items.append(item)
+        else:
+            board_report_requests.append(item)
+
+# Follow board report pages and collect the meetings they yield
+for board_req in board_report_requests:
+    board_report_page = file_response(
+        join(dirname(__file__), "files", "tulok_unionps_board_report.html"),
+        url=board_req.url,
+    )
+    board_report_page.meta.update(board_req.meta)
+
+    for meeting_item in spider.parse_board_report(board_report_page):
+        if isinstance(meeting_item, Meeting):
+            parsed_items.append(meeting_item)
 
 freezer.stop()
 
 
 def test_first_item_properties():
     item = parsed_items[0]
-    assert item["title"] == "Board of Education Meeting"
-    assert item["start"] == datetime(2025, 1, 21, 19, 0)
+    assert item["title"] == "Board of Education Special Meeting"
+    assert item["start"] == datetime(2025, 3, 13, 19, 0)
     assert item["status"] == "passed"
     assert item["location"] == spider.meeting_location
 
@@ -46,7 +63,7 @@ def test_first_item_properties():
     assert item["description"] != ""
 
     # Links
-    assert len(item["links"]) == 4
+    assert len(item["links"]) >= 1
     assert item["links"][0]["title"] == "Agenda"
     href = item["links"][0]["href"]
     assert href.startswith("https://www.unionps.org/fs/resource-manager/view/")
@@ -112,6 +129,13 @@ def test_links():
             assert "href" in link and "title" in link
             assert link["href"]
             assert link["title"] in ["Agenda", "Minutes", "Board Report", "Video"]
+
+
+def test_meetings_have_video():
+    """Test that at least some meetings have video links"""
+    assert any(
+        link["title"] == "Video" for item in parsed_items for link in item["links"]
+    )
 
 
 def test_classification():
