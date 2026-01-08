@@ -48,10 +48,11 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
         # Define panel IDs for each year (2016 through next year)
         # Panel suffixes: 1=City Council, 2-4=Committees
         # We process all panel suffixes 1-4 to capture both City Council and committee meetings
-        year_panel_configs = []
-        for year in range(2016, datetime.now().year + 2):
-            for suffix in range(1, 5):  # Suffixes 1-4
-                year_panel_configs.append((year, suffix, f"CollapsiblePanel{year}{suffix}"))
+        year_panel_configs = [
+            (year, suffix, f"CollapsiblePanel{year}{suffix}")
+            for year in range(2016, datetime.now().year + 2)
+            for suffix in range(1, 5)  # Suffixes 1-4
+        ]
 
         # Iterate through each panel
         for year, suffix, panel_id in year_panel_configs:
@@ -254,13 +255,9 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
 
             # Only process City Council and City Council committee meetings
             # Filter out other bodies like Human Rights Commission, Planning Commission, etc.
-            # Match patterns like: "Council Meeting", "Council Special Meeting", "Regular Council Meeting", etc.
-            is_city_council = re.search(
-                r"\b(City\s+)?Council\s+(Meeting|Special\s+Meeting|Regular\s+Meeting)",
-                title,
-                re.IGNORECASE
-            )
+            # First check for committees, then any other meeting with "Council" is a City Council meeting
             is_committee = re.search(r"\bCouncil\b.*\bCommittee\b", title, re.IGNORECASE)
+            is_city_council = re.search(r"\bCouncil\b", title, re.IGNORECASE) and not is_committee
 
             if is_city_council or is_committee:
                 meeting = self._parse_upcoming_event_row(row, response)
