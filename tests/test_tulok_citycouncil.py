@@ -42,7 +42,8 @@ class TestMeetingCounts:
         # - 13 historical meetings across years (2016-2025)
         # - 2 upcoming Council meetings (Regular + Special)
         # - 2 upcoming Committee meetings
-        # Note: "In Progress" meetings and non-City-Council meetings (e.g., Human Rights Commission) are filtered out
+        # Note: "In Progress" meetings and non-City-Council meetings
+        # (e.g., Human Rights Commission) are filtered out
         assert len(parsed_items) == EXPECTED_TOTAL_MEETINGS
 
     def test_historical_vs_upcoming_split(self, parsed_items):

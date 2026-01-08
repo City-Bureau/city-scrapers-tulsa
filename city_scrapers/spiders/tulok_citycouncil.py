@@ -39,15 +39,19 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
 
     def parse(self, response):
         """
-        Parse the main Granicus page and extract City Council and committee meetings.
+        Parse the main Granicus page and extract City Council and
+        committee meetings.
 
-        We target CollapsiblePanels for City Council and committee sections across multiple years.
-        Panel IDs follow the pattern: CollapsiblePanel2024X, CollapsiblePanel2023X, etc.
-        where X is a digit suffix (1=City Council, 2-4=committees).
+        We target CollapsiblePanels for City Council and committee
+        sections across multiple years.
+        Panel IDs follow the pattern: CollapsiblePanel2024X,
+        CollapsiblePanel2023X, etc. where X is a digit suffix
+        (1=City Council, 2-4=committees).
         """
         # Define panel IDs for each year (2016 through next year)
         # Panel suffixes: 1=City Council, 2-4=Committees
-        # We process all panel suffixes 1-4 to capture both City Council and committee meetings
+        # We process all panel suffixes 1-4 to capture both
+        # City Council and committee meetings
         year_panel_configs = [
             (year, suffix, f"CollapsiblePanel{year}{suffix}")
             for year in range(2016, datetime.now().year + 2)
@@ -261,8 +265,10 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             title = title.strip()
 
             # Only process City Council and City Council committee meetings
-            # Filter out other bodies like Human Rights Commission, Planning Commission, etc.
-            # First check for committees, then any other meeting with "Council" is a City Council meeting
+            # Filter out other bodies like Human Rights Commission,
+            # Planning Commission, etc.
+            # First check for committees, then any other meeting with
+            # "Council" is a City Council meeting
             is_committee = re.search(
                 r"\bCouncil\b.*\bCommittee\b", title, re.IGNORECASE
             )
