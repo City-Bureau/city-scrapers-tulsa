@@ -63,7 +63,7 @@ def test_first_item_properties():
     assert item["description"] != ""
 
     # Links
-    assert len(item["links"]) >= 1
+    assert len(item["links"]) == 2
     assert item["links"][0]["title"] == "Agenda"
     href = item["links"][0]["href"]
     assert href.startswith("https://www.unionps.org/fs/resource-manager/view/")
