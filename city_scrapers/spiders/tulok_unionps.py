@@ -26,7 +26,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
         flags=re.IGNORECASE,
     )
 
-    youtube_embed_re = re.compile(r"youtube\.com/embed/([a-zA-Z0-9_-]+)")
+    YOUTUBE_EMBED_RE = re.compile(r"youtube\.com/embed/([a-zA-Z0-9_-]+)")
 
     def parse(self, response):
         """Start by fetching board page."""
@@ -150,7 +150,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
             '//h3[contains(text(), "Video")]/following-sibling::p//iframe[contains(@src, "youtube.com")]/@src'  # noqa
         ).get()
         if video_section:
-            match = self.youtube_embed_re.search(video_section)
+            match = self.YOUTUBE_EMBED_RE.search(video_section)
             if match:
                 return f"https://www.youtube.com/watch?v={match.group(1)}"
 
@@ -166,7 +166,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
             'iframe[src*="youtube.com"]:last-of-type::attr(src)'
         ).get()
         if iframe_src:
-            match = self.youtube_embed_re.search(iframe_src)
+            match = self.YOUTUBE_EMBED_RE.search(iframe_src)
             if match:
                 return f"https://www.youtube.com/watch?v={match.group(1)}"
 
