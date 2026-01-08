@@ -188,7 +188,9 @@ class TestMeetingFiltering:
     def test_committee_meetings_included(self, parsed_items):
         """Test that City Council committee meetings are included."""
         # Check that committee meetings ARE in parsed items
-        committee_meetings = [item for item in parsed_items if "Committee" in item["title"]]
+        committee_meetings = [
+            item for item in parsed_items if "Committee" in item["title"]
+        ]
         assert len(committee_meetings) >= 1
 
         # All committee meetings should have COMMITTEE classification
@@ -201,7 +203,7 @@ class TestMeetingFiltering:
         expected_committees = [
             "Council Urban & Economic Development Committee",
             "Council Budget & Special Projects Committee",
-            "Council Public Works Committee"
+            "Council Public Works Committee",
         ]
         assert any(name in committee_names for name in expected_committees)
 

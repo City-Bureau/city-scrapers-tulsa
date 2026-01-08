@@ -65,8 +65,12 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             meeting_rows = panel.css("table.listingTable tbody tr.listingRow")
 
             if meeting_rows:
-                panel_type = "City Council" if suffix == 1 else f"Committee (suffix {suffix})"
-                self.logger.info(f"Found {len(meeting_rows)} {panel_type} meetings for {year}")
+                panel_type = (
+                    "City Council" if suffix == 1 else f"Committee (suffix {suffix})"
+                )
+                self.logger.info(
+                    f"Found {len(meeting_rows)} {panel_type} meetings for {year}"
+                )
 
                 for row in meeting_rows:
                     meeting = self._parse_meeting_row(row, response)
@@ -259,8 +263,12 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             # Only process City Council and City Council committee meetings
             # Filter out other bodies like Human Rights Commission, Planning Commission, etc.
             # First check for committees, then any other meeting with "Council" is a City Council meeting
-            is_committee = re.search(r"\bCouncil\b.*\bCommittee\b", title, re.IGNORECASE)
-            is_city_council = re.search(r"\bCouncil\b", title, re.IGNORECASE) and not is_committee
+            is_committee = re.search(
+                r"\bCouncil\b.*\bCommittee\b", title, re.IGNORECASE
+            )
+            is_city_council = (
+                re.search(r"\bCouncil\b", title, re.IGNORECASE) and not is_committee
+            )
 
             if is_city_council or is_committee:
                 meeting = self._parse_upcoming_event_row(row, response)
