@@ -6,16 +6,18 @@ from datetime import datetime
 from os.path import dirname, join
 
 import pytest
-from city_scrapers_core.constants import CITY_COUNCIL, PASSED
+from city_scrapers_core.constants import CITY_COUNCIL, COMMITTEE, PASSED
 from city_scrapers_core.utils import file_response
 from freezegun import freeze_time
 
 from city_scrapers.spiders.tulok_citycouncil import TulsaGranicusCityCouncilSpider
 
 # Constants for test validation
-EXPECTED_TOTAL_MEETINGS = 15
+# Updated to include committee meetings (Council Urban & Economic Development,
+# Council Budget & Special Projects, Council Public Works)
+EXPECTED_TOTAL_MEETINGS = 17
 EXPECTED_HISTORICAL_MEETINGS = 13
-EXPECTED_UPCOMING_MEETINGS = 2
+EXPECTED_UPCOMING_MEETINGS = 4  # 2 Council + 2 Committee meetings
 SOURCE_URL = "https://tulsa-ok.granicus.com/ViewPublisher.php?view_id=4"
 
 
@@ -39,7 +41,8 @@ class TestMeetingCounts:
         # Test HTML contains:
         # - 13 historical meetings across years (2016-2025)
         # - 2 upcoming Council meetings (Regular + Special)
-        # Note: Committee meetings and "In Progress" meetings are filtered out
+        # - 2 upcoming Committee meetings
+        # Note: "In Progress" meetings and non-City-Council meetings (e.g., Human Rights Commission) are filtered out
         assert len(parsed_items) == EXPECTED_TOTAL_MEETINGS
 
     def test_historical_vs_upcoming_split(self, parsed_items):
@@ -98,7 +101,8 @@ class TestMeetingStructure:
         for meeting in parsed_items:
             assert meeting["title"]
             assert meeting["start"] is not None
-            assert meeting["classification"] == CITY_COUNCIL
+            # Classification should be either CITY_COUNCIL or COMMITTEE
+            assert meeting["classification"] in [CITY_COUNCIL, COMMITTEE]
             assert meeting["source"] == SOURCE_URL
             assert meeting["location"]["name"] == "City Hall"
             assert "175 E 2nd St" in meeting["location"]["address"]
@@ -166,13 +170,31 @@ class TestMeetingFiltering:
         )
         assert special_dec is not None
 
-    def test_non_council_meetings_filtered(self, parsed_items):
-        """Test that non-Council meetings are filtered out."""
-        # Check that "Human Rights Commission" is NOT in parsed items
-        assert not any("Human Rights" in item["title"] for item in parsed_items)
+    def test_committee_meetings_included(self, parsed_items):
+        """Test that City Council committee meetings are included."""
+        # Check that committee meetings ARE in parsed items
+        committee_meetings = [item for item in parsed_items if "Committee" in item["title"]]
+        assert len(committee_meetings) >= 1
 
-        # Check that committee meetings are NOT in parsed items
-        assert not any("Committee" in item["title"] for item in parsed_items)
+        # All committee meetings should have COMMITTEE classification
+        for meeting in committee_meetings:
+            assert meeting["classification"] == COMMITTEE
+
+        # Verify specific committee meetings are present
+        committee_names = {item["title"] for item in committee_meetings}
+        # At least one of the expected committees should be present
+        expected_committees = [
+            "Council Urban & Economic Development Committee",
+            "Council Budget & Special Projects Committee",
+            "Council Public Works Committee"
+        ]
+        assert any(name in committee_names for name in expected_committees)
+
+    def test_non_city_council_meetings_filtered(self, parsed_items):
+        """Test that non-City-Council meetings (not committees) are filtered out."""
+        # Check that "Human Rights Commission" is NOT in parsed items
+        # (This is a different body, not a City Council committee)
+        assert not any("Human Rights" in item["title"] for item in parsed_items)
 
     def test_meeting_title_variety(self, parsed_items):
         """Test that various meeting title formats are captured."""
