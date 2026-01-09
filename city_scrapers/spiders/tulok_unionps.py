@@ -26,6 +26,8 @@ class TulokUnionpsSpider(CityScrapersSpider):
         flags=re.IGNORECASE,
     )
 
+    YOUTUBE_EMBED_RE = re.compile(r"youtube\.com/embed/([a-zA-Z0-9_-]+)")
+
     def parse(self, response):
         """Start by fetching board page."""
         yield response.follow(
@@ -114,10 +116,12 @@ class TulokUnionpsSpider(CityScrapersSpider):
                 )
 
         # Upcoming meetings
-        for col in main_page.css("section#fsEl_23350 div.fsStyleColumn"):
-            for text in col.xpath(".//p/text()").getall():
-                for date_str in (s.strip() for s in text.split("\n") if s.strip()):
-                    sources.append({"text": date_str, "anchor": None})
+        for text in main_page.css(
+            "section#fsEl_23350 div.fsStyleColumn p::text"
+        ).getall():
+            for line in text.split("\n"):
+                if stripped := line.strip():
+                    sources.append({"text": stripped, "anchor": None})
         return sources
 
     def parse_board_report(self, response):
@@ -146,7 +150,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
             '//h3[contains(text(), "Video")]/following-sibling::p//iframe[contains(@src, "youtube.com")]/@src'  # noqa
         ).get()
         if video_section:
-            match = re.search(r"youtube\.com/embed/([a-zA-Z0-9_-]+)", video_section)
+            match = self.YOUTUBE_EMBED_RE.search(video_section)
             if match:
                 return f"https://www.youtube.com/watch?v={match.group(1)}"
 
@@ -162,7 +166,7 @@ class TulokUnionpsSpider(CityScrapersSpider):
             'iframe[src*="youtube.com"]:last-of-type::attr(src)'
         ).get()
         if iframe_src:
-            match = re.search(r"youtube\.com/embed/([a-zA-Z0-9_-]+)", iframe_src)
+            match = self.YOUTUBE_EMBED_RE.search(iframe_src)
             if match:
                 return f"https://www.youtube.com/watch?v={match.group(1)}"
 
