@@ -1,8 +1,12 @@
 """
-Spider for Tulsa City Council meetings on Granicus platform.
+Spider for Tulsa City Council and committee meetings on Granicus platform.
 
 This spider scrapes meeting data from the Granicus-based video archive page
-for Tulsa City Council meetings.
+for Tulsa City Council meetings and City Council committee meetings, including:
+- City Council meetings
+- Council Urban & Economic Development Committee
+- Council Budget & Special Projects Committee
+- Council Public Works Committee
 
 URL: https://tulsa-ok.granicus.com/ViewPublisher.php?view_id=4
 """
@@ -11,7 +15,7 @@ import re
 from datetime import datetime
 from typing import Any, ClassVar
 
-from city_scrapers_core.constants import CITY_COUNCIL
+from city_scrapers_core.constants import CITY_COUNCIL, COMMITTEE
 from city_scrapers_core.items import Meeting
 from city_scrapers_core.spiders import CityScrapersSpider
 
@@ -35,41 +39,41 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
 
     def parse(self, response):
         """
-        Parse the main Granicus page and extract City Council meetings.
+        Parse the main Granicus page and extract City Council and
+        committee meetings.
 
-        We target CollapsiblePanels for *City Council sections across multiple years.
-        Panel IDs follow the pattern: CollapsiblePanel2024X, CollapsiblePanel2023X, etc.
-        where X is a digit (varies by year).
+        We target CollapsiblePanels for City Council and committee
+        sections across multiple years.
+        Panel IDs follow the pattern: CollapsiblePanel2024X,
+        CollapsiblePanel2023X, etc. where X is a digit suffix
+        (1=City Council, 2-4=committees).
         """
         # Define panel IDs for each year (2016 through next year)
-        # The panel ID pattern includes the year and a digit suffix
-        # note: The "1" suffix is intentional and required. It specifically
-        # targets City Council meetings (CollapsiblePanel{year}1) while
-        # excluding other panels like committees (CollapsiblePanel{year}2,
-        # CollapsiblePanel{year}3, etc.).
-        year_panel_ids = {
-            year: f"CollapsiblePanel{year}1"
+        # Panel suffixes: 1=City Council, 2-4=Committees
+        # We process all panel suffixes 1-4 to capture both
+        # City Council and committee meetings
+        year_panel_configs = [
+            (year, suffix, f"CollapsiblePanel{year}{suffix}")
             for year in range(2016, datetime.now().year + 2)
-        }
+            for suffix in range(1, 5)  # Suffixes 1-4
+        ]
 
-        # Iterate through each year's panel
-        for year, panel_id in year_panel_ids.items():
-            city_council_panel = response.css(f"div#{panel_id}")
+        # Iterate through each panel
+        for year, suffix, panel_id in year_panel_configs:
+            panel = response.css(f"div#{panel_id}")
 
-            if not city_council_panel:
-                self.logger.info(
-                    f"Could not find City Council panel for {year} (ID: {panel_id})"
-                )
+            if not panel:
                 continue
 
             # Extract all meeting rows from the table
-            meeting_rows = city_council_panel.css(
-                "table.listingTable tbody tr.listingRow"
-            )
+            meeting_rows = panel.css("table.listingTable tbody tr.listingRow")
 
             if meeting_rows:
+                panel_type = (
+                    "City Council" if suffix == 1 else f"Committee (suffix {suffix})"
+                )
                 self.logger.info(
-                    f"Found {len(meeting_rows)} City Council meetings for {year}"
+                    f"Found {len(meeting_rows)} {panel_type} meetings for {year}"
                 )
 
                 for row in meeting_rows:
@@ -114,11 +118,14 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             # Extract links (Agenda and Video)
             links = self._parse_links(row, response)
 
+            # Determine classification based on title
+            classification = self._get_classification(title)
+
             # Build meeting item
             meeting = Meeting(
                 title=title,
                 description="",
-                classification=CITY_COUNCIL,
+                classification=classification,
                 start=start,
                 end=None,
                 all_day=False,
@@ -136,6 +143,20 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             return None
         else:
             return meeting
+
+    def _get_classification(self, title):
+        """
+        Determine the meeting classification based on title.
+
+        Args:
+            title: Meeting title string
+
+        Returns:
+            Classification constant (COMMITTEE or CITY_COUNCIL)
+        """
+        if re.search(r"\bcommittee\b", title, re.IGNORECASE):
+            return COMMITTEE
+        return CITY_COUNCIL
 
     def _parse_datetime(self, date_text):
         """
@@ -214,7 +235,7 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
 
     def _parse_upcoming_events(self, response):
         """
-        Parse upcoming events section and filter for Council meetings.
+        Parse upcoming events section for both Council and committee meetings.
 
         Args:
             response: Scrapy response object
@@ -234,28 +255,34 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
         # Extract all meeting rows from the upcoming events table
         meeting_rows = upcoming_table.css("tbody tr.listingRow")
 
-        council_count = 0
+        meeting_count = 0
         for row in meeting_rows:
-            # Extract meeting title to filter for Council meetings
+            # Extract meeting title to filter for City Council and committee meetings
             title = row.css('td.listItem[headers="Name"]::text').get()
-            if title:
-                title = title.strip()
-                # Only process City Council meetings (not committee meetings)
-                # Pattern: Must contain "Regular", "Special", or "Emergency"
-                # AND must NOT contain "Committee"
-                if re.search(
-                    r"^(Regular|Tulsa City Council|Council|City Council)?\s*"
-                    r"(Council|Regular|Emergency Special|Special)?\s*"
-                    r"Meeting\s*(Part\s*[\d])?",
-                    title,
-                    re.IGNORECASE,
-                ) and not re.search(r"\bcommittee\b", title, re.IGNORECASE):
-                    meeting = self._parse_upcoming_event_row(row, response)
-                    if meeting:
-                        meetings.append(meeting)
-                        council_count += 1
+            if not title:
+                continue
 
-        self.logger.info(f"Found {council_count} upcoming Council meetings")
+            title = title.strip()
+
+            # Only process City Council and City Council committee meetings
+            # Filter out other bodies like Human Rights Commission,
+            # Planning Commission, etc.
+            # First check for committees, then any other meeting with
+            # "Council" is a City Council meeting
+            is_committee = re.search(
+                r"\bCouncil\b.*\bCommittee\b", title, re.IGNORECASE
+            )
+            is_city_council = (
+                re.search(r"\bCouncil\b", title, re.IGNORECASE) and not is_committee
+            )
+
+            if is_city_council or is_committee:
+                meeting = self._parse_upcoming_event_row(row, response)
+                if meeting:
+                    meetings.append(meeting)
+                    meeting_count += 1
+
+        self.logger.info(f"Found {meeting_count} upcoming meetings")
         return meetings
 
     def _parse_upcoming_event_row(self, row, response):
@@ -309,11 +336,14 @@ class TulsaGranicusCityCouncilSpider(CityScrapersSpider):
             # Extract links (Agenda and Video)
             links = self._parse_upcoming_event_links(row, response)
 
+            # Determine classification based on title
+            classification = self._get_classification(title)
+
             # Build meeting item
             meeting = Meeting(
                 title=title,
                 description="",
-                classification=CITY_COUNCIL,
+                classification=classification,
                 start=start,
                 end=None,
                 all_day=False,
