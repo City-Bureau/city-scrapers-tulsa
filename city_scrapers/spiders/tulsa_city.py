@@ -34,10 +34,9 @@ spider_configs = [
         "agency": "Asian Affairs Commission",
         "board_id": "1102",
         "location": {
-            "name": "Room 411, City Hall at One Technology Center",
-            "address": "175 E 2nd St, Tulsa, OK 74103",
+            "name": "Check agenda for location details",
+            "address": "Check agenda for location details",
         },
-        "time_notes": "Check the meeting agenda for meeting location and time details.",
     },
     {
         "class_name": "TulokHispanicLatinxAffairsSpider",
@@ -140,10 +139,9 @@ spider_configs = [
         "agency": "Tulsa Parks and Recreation Board",
         "board_id": "877",
         "location": {
-            "name": "TBD",
-            "address": "TBD",
+            "name": "Check agenda for location details",
+            "address": "Check agenda for location details",
         },
-        "time_notes": "Check the meeting agenda for meeting location and time details.",
     },
     {
         "class_name": "TulokStadiumTrustSpider",

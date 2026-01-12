@@ -147,10 +147,10 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
         )
 
     def parse(self, response):
-        api_url_meetings = response.meta.get("api_data", [])
-        upcoming_meetings = self._get_upcoming_meetings(response)
+        city_api_meetings = response.meta.get("api_data", [])
+        granicus_meetings = self._get_upcoming_meetings(response)
 
-        meetings_data = upcoming_meetings + api_url_meetings
+        meetings_data = self.filter_duplicates(city_api_meetings, granicus_meetings)
 
         for meeting_data in meetings_data:
             if "Annual" not in meeting_data.get("Meeting_Type", ""):
@@ -158,6 +158,30 @@ class TulsaCityMixin(CityScrapersSpider, metaclass=TulsaCityMixinMeta):
 
                 if meeting:
                     yield meeting
+
+    def filter_duplicates(self, city_api_meetings, granicus_meetings):
+        """
+        This function combines meeting data from the Tulsa city API
+        and the Granicus upcoming meetings page, removing duplicates.
+        When a meeting appears in both sources, the City API data is
+        preferred (for now) since it may contain additional information
+        such as agenda links.
+        """
+
+        city_meetings_by_date = {}
+        for meeting in city_api_meetings:
+            meeting_date = self._parse_start(meeting)
+            if meeting_date is not None:
+                city_meetings_by_date[meeting_date] = meeting
+
+        filtered_meetings = list(city_api_meetings)
+
+        for g_meeting in granicus_meetings:
+            g_date = g_meeting.get("Meeting_Date_Time")
+            if g_date is None or g_date not in city_meetings_by_date:
+                filtered_meetings.append(g_meeting)
+
+        return filtered_meetings
 
     def _get_upcoming_meetings(self, response):
         upcoming_table = response.css('table.listingTable[summary*="Upcoming"]')
