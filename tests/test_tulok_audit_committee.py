@@ -29,7 +29,7 @@ test_response.request = Request(
 @pytest.fixture
 def parsed_items():
     spider = TulokAuditCommitteeSpider()
-    with freeze_time("2025-12-09"):
+    with freeze_time("2026-01-09"):
         return [item for item in spider.parse(test_response)]
 
 
